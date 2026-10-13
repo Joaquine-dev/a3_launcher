@@ -30,10 +30,10 @@ def rvb(hexa):
 def couleurs():
     with open(CONFIG, encoding="utf-8") as f:
         c = json.load(f).get("couleurs", {})
-    return rvb(c.get("fond", "#0b0d14")), rvb(c.get("surface", "#141824")), rvb(c.get("accent", "#ffb547"))
+    return rvb(c.get("surface", "#141824")), rvb(c.get("accent", "#ffb547"))
 
 
-def embleme(taille, fond, surface, accent):
+def embleme(taille, surface, accent):
     k = 4
     t = taille * k
     im = Image.new("RGBA", (t, t), (0, 0, 0, 0))
@@ -135,9 +135,9 @@ def main():
         image_fond(chemin)
         print("Image de fond ecrite : %s (%d Ko)" % (chemin, os.path.getsize(chemin) // 1024))
         return
-    fond, surface, accent = couleurs()
-    embleme(1024, fond, surface, accent).save(os.path.join(LAUNCHER, "app-icon.png"))
-    embleme(256, fond, surface, accent).save(os.path.join(LAUNCHER, "public", "logo.png"))
+    surface, accent = couleurs()
+    embleme(1024, surface, accent).save(os.path.join(LAUNCHER, "app-icon.png"))
+    embleme(256, surface, accent).save(os.path.join(LAUNCHER, "public", "logo.png"))
     print("Visuels ecrits. Icones : cd launcher && npx tauri icon app-icon.png")
 
 

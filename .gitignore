@@ -5,6 +5,8 @@ target/
 launcher/src-tauri/gen/
 launcher/src-tauri/icons/android/
 launcher/src-tauri/icons/ios/
+launcher/src-tauri/icons/Square*Logo.png
+launcher/src-tauri/icons/StoreLogo.png
 
 # Serveur : données publiées, mods, installeurs, configuration réelle
 serveur/donnees/*

@@ -64,7 +64,7 @@ cd launcher
 npx tauri icon app-icon.png
 ```
 
-La commande écrit `src-tauri/icons/` (dont `icon.ico` utilisé par Windows). Elle crée aussi `icons/android/` et `icons/ios/`, inutiles ici et ignorés par git.
+La commande écrit `src-tauri/icons/` (dont `icon.ico` utilisé par Windows). Elle crée aussi `icons/android/`, `icons/ios/` et les logos du Microsoft Store (`Square*Logo.png`, `StoreLogo.png`), inutiles pour l'installeur NSIS et ignorés par git.
 
 `python launcher/scripts/visuels.py --fond` régénère l'image de fond par défaut (Pillow et numpy : `pip install pillow numpy`).
 

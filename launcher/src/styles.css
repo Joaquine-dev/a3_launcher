@@ -281,7 +281,7 @@ button.fenetre.fermer:hover { color: #fff; background: #c4392b; }
   margin: 6px 0 18px;
 }
 
-.verre, .news-carte, .lien-carte, .panneau {
+.news-carte, .lien-carte, .panneau {
   background: var(--verre);
   border: 1px solid var(--trait);
   border-radius: var(--rayon);
