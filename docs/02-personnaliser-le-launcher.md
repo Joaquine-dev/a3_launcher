@@ -15,7 +15,7 @@ Tout ce qui distingue **votre** launcher tient dans un seul fichier, à la racin
   "userAgent": "Arma-Launcher",
   "editeur": "",
   "devise": "Un serveur, mille histoires…",
-  "couleurs": { "fond": "#0b0f12", "accent": "#6cb8e6" }
+  "couleurs": { "fond": "#141618", "accent": "#8a9a5b" }
 }
 ```
 
@@ -29,7 +29,7 @@ Tout ce qui distingue **votre** launcher tient dans un seul fichier, à la racin
 | `clePubliqueMaj` | Clé publique de signature des mises à jour (voir [03-signer-et-construire.md](03-signer-et-construire.md)). Vide = mise à jour automatique désactivée, construction sans signature. | `tauri.conf.json` |
 | `userAgent` | Préfixe de l'en-tête `User-Agent` des requêtes HTTP (`Arma-Launcher/0.1.0`), pratique pour filtrer vos journaux nginx. | Rust (`lib.rs`) |
 | `editeur` | Facultatif : nom de l'éditeur affiché par l'installeur Windows. | `tauri.conf.json` |
-| `devise` | Phrase affichée sous le nom de la carte, dans l'en-tête. | Interface |
+| `devise` | Phrase affichée sous le nom du serveur, sur l'écran « Jouer ». | Interface |
 | `couleurs` | Couleurs de l'interface (voir plus bas). | Interface, `scripts/visuels.py` |
 
 ### Comment la configuration est appliquée
@@ -44,11 +44,10 @@ Tout ce qui distingue **votre** launcher tient dans un seul fichier, à la racin
 
 | Fichier | Taille | Rôle |
 |---|---|---|
-| `launcher/public/logo.png` | 256 × 256, PNG transparent | Petit logo de la barre de titre |
-| `launcher/public/entete.webp` | 1536 × 287 (ou plus, même proportion) | Fond de l'en-tête (état du serveur) |
+| `launcher/public/logo.png` | 256 × 256, PNG transparent | Logo de la barre latérale (affiché en 32 px) |
 | `launcher/app-icon.png` | 1024 × 1024, PNG transparent | Source de toutes les icônes (fenêtre, installeur, barre des tâches) |
 
-Les visuels fournis sont volontairement neutres. Pour les régénérer dans vos couleurs (nécessite Python et Pillow) :
+Les visuels fournis sont volontairement neutres (un réticule dans la couleur `accent`). Pour les régénérer dans vos couleurs (nécessite Python et Pillow) :
 
 ```sh
 pip install pillow
@@ -64,26 +63,34 @@ npx tauri icon app-icon.png
 
 La commande écrit `src-tauri/icons/` (dont `icon.ico` utilisé par Windows). Elle crée aussi `icons/android/` et `icons/ios/`, inutiles ici et ignorés par git.
 
-## Couleurs
+## Interface et couleurs
 
-Chaque clé de `couleurs` devient une variable CSS `--<clé>` qui remplace celle de `launcher/src/styles.css` :
+L'interface suit un style « tactique » sobre : fond graphite, **une seule couleur d'accent**, police à chasse fixe pour les données (état du serveur, joueurs, tailles, progression) et sans-serif pour le reste. Une barre latérale mène aux écrans *Jouer*, *Actualités*, *Liens* et *Paramètres* ; la zone du bas (état des mods, jauge de synchronisation, bouton **JOUER**) reste visible sur tous les écrans.
+
+![Écran Jouer](captures/accueil.png)
+
+Chaque clé de `couleurs` devient une variable CSS `--<clé>` qui remplace celle de `launcher/src/styles.css`. En pratique, changer `accent` suffit à donner votre couleur au launcher :
 
 | Clé | Rôle (valeur par défaut) |
 |---|---|
-| `fond` | Fond de la fenêtre (`#0b0f12`) |
-| `surface`, `relief` | Panneaux et éléments surélevés (`#12181d`, `#1a2229`) |
-| `texte`, `discret` | Texte principal et secondaire (`#eceeea`, `#8b98a1`) |
-| `accent` | Couleur de marque : boutons, liens, jauge, focus (`#6cb8e6`) |
-| `soleil` | Avertissements, bouton « Configurer Arma 3 » (`#e9b44c`) |
-| `ok`, `danger` | Serveur en ligne, erreurs (`#5fc98a`, `#ef6a5e`) |
-| `trait`, `trait-fort` | Bordures (`rgb(255 255 255 / .08)`, `… / .14`) |
+| `fond` | Fond de la fenêtre, graphite (`#141618`) |
+| `surface`, `relief` | Barre latérale, cartes, champs et boutons secondaires (`#1c1f22`, `#262a2e`) |
+| `texte`, `discret` | Texte principal et secondaire (`#e4e2da`, `#969a91`) |
+| `accent` | **La** couleur de marque : bouton JOUER, jauge, élément actif, liens, focus (`#8a9a5b`, vert olive) |
+| `sur-accent` | Texte posé sur l'accent, bouton JOUER compris (`#101210`) |
+| `alerte` | Bandeaux d'avertissement, bouton « Configurer Arma 3 », lancement retenu pendant un redémarrage (`#d4a849`) |
+| `ok`, `danger` | Serveur en ligne, erreurs (`#8fbf6a`, `#e0705f`) |
+| `trait`, `trait-fort` | Bordures (`rgb(255 255 255 / .07)`, `… / .14`) |
 
-Les teintes transparentes (survols, halos) sont calculées à partir de `accent` et `soleil` (`color-mix`), il n'y a rien d'autre à changer.
+Les teintes dérivées (fonds des bandeaux, sélection) sont calculées à partir de `accent`, `alerte` et `danger` (`color-mix`).
+
+**Contraste.** L'accent sert aussi de couleur de texte (dates, liens) sur `fond` et `surface` : gardez un rapport de contraste d'au moins 4,5:1 (WCAG AA). Le vert olive par défaut atteint 5,9:1 sur `fond` et 5,4:1 sur `surface`, et `sur-accent` 6,1:1 sur l'accent. Un accent très clair (jaune, cyan pâle) demande un `sur-accent` sombre ; un accent très sombre, un `sur-accent` clair (`#ffffff`). Vérifiez avec un outil comme le *Contrast Checker* de WebAIM.
+
+La page de téléchargement générée par `publier` (`https://votre-domaine/`) reprend la même identité ; ses couleurs sont dans le bloc `:root` du gabarit `PAGE` de `serveur/publier/publier.py`.
 
 ## Aller plus loin
 
-- **Polices** : `@fontsource-variable/*`, importées en tête de `launcher/src/styles.css`. Elles sont embarquées dans le launcher (aucune requête vers Internet).
-- **Décor de l'en-tête** : courbes de niveau dessinées par `launcher/src/topo.ts` (constante `COORDONNEE` pour la petite coordonnée affichée). Supprimez l'appel `poserTopo` dans `main.ts` pour vous en passer.
+- **Polices** : IBM Plex Sans et IBM Plex Mono (licence OFL), paquets `@fontsource/ibm-plex-sans` et `@fontsource/ibm-plex-mono` importés en tête de `launcher/src/styles.css` (sous-ensemble latin seulement). Elles sont embarquées dans le launcher : aucune requête vers Internet, la CSP n'autorise que `font-src 'self'`.
 - **Textes** : l'interface est en français, dans `launcher/index.html` et `launcher/src/main.ts`.
 - **Taille de la fenêtre** : 1100 × 680, mise à l'échelle selon l'écran ; les constantes sont dans `src-tauri/src/lib.rs` (`LARGEUR`, `HAUTEUR`), `main.ts` (`echelle`) et `styles.css` (`body`).
 - **Lien de téléchargement de TeamSpeak 3** : constante `TELECHARGER_TEAMSPEAK` de `main.ts`.

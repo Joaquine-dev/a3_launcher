@@ -10,6 +10,12 @@ Le joueur installe le launcher une fois. Ensuite, à chaque ouverture, il :
 - propose le plugin TeamSpeak TFAR s'il manque (facultatif) ;
 - se met à jour tout seul quand vous publiez une nouvelle version.
 
+![Le launcher : état du serveur, dernière actualité, liens et bouton JOUER](docs/captures/accueil.png)
+
+| Synchronisation des mods | Actualités | Page de téléchargement |
+|---|---|---|
+| ![Synchronisation](docs/captures/synchronisation.png) | ![Actualités](docs/captures/actualites.png) | ![Page de téléchargement](docs/captures/page-telechargement.png) |
+
 Côté serveur, **aucun code ne tourne** : nginx sert des fichiers statiques, et un petit outil Python (dans Docker lui aussi) prépare ces fichiers à partir de votre dossier de mods.
 
 ## Principe

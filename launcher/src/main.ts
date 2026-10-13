@@ -5,7 +5,6 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { poserTopo } from "./topo";
 
 type Reglages = { dossier_arma: string | null; dossier_mods: string; parametres: string; apres_lancement: "reduire" | "fermer"; rejoindre_teamspeak: boolean };
 type Lien = { nom: string; url: string; icone: string; description?: string };
@@ -118,91 +117,138 @@ function erreur(message: string | null) {
 function jauge(pourcent: number | null, balaye = false) {
   const barre = el("jauge");
   barre.className = `jauge${balaye ? " balaye" : ""}`;
-  barre.hidden = pourcent === null && !balaye;
-  barre.style.width = balaye ? "100%" : `${(pourcent ?? 0).toFixed(1)}%`;
+  el("piste").hidden = pourcent === null && !balaye;
+  barre.style.width = balaye ? "30%" : `${(pourcent ?? 0).toFixed(1)}%`;
   const compteur = el("pourcent");
   compteur.hidden = pourcent === null;
   compteur.textContent = pourcent === null ? "" : `${Math.round(pourcent)} %`;
 }
 
+function texteVide(message: string): HTMLParagraphElement {
+  const p = document.createElement("p");
+  p.className = "vide";
+  p.textContent = message;
+  return p;
+}
+
+function recente(n: News): boolean {
+  const [a, m, j] = n.date.split("-").map(Number);
+  return (Date.now() - new Date(a, m - 1, j).getTime()) / 864e5 < 7;
+}
+
+function boutonLienNews(lien: Lien): HTMLButtonElement {
+  const bouton = document.createElement("button");
+  bouton.className = "lien-news";
+  bouton.textContent = lien.nom;
+  bouton.append(icone("fleche", "fleche"));
+  bouton.onclick = () => ouvrirLien(lien.url);
+  return bouton;
+}
+
 function rendreNews(news: News[]) {
   const zone = el("news");
+  const une = el("news-une");
   zone.replaceChildren();
+  une.replaceChildren();
   const triee = [...news].sort((a, b) => b.date.localeCompare(a.date));
+  el("nb-news").hidden = !triee.length;
+  el("nb-news").textContent = String(triee.length);
+  el("voir-news").hidden = triee.length < 2;
+  el("voir-news").textContent = `Toutes les actualités (${triee.length})`;
   if (!triee.length) {
-    const p = document.createElement("p");
-    p.className = "vide";
-    p.textContent = "Aucune actualité pour le moment.";
-    zone.append(p);
+    zone.append(texteVide("Aucune actualité pour le moment."));
+    une.append(texteVide("Aucune actualité pour le moment."));
     return;
   }
-  const mois = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
-  const aujourdhui = new Date();
   triee.forEach((n, i) => {
-    const article = document.createElement("article");
-    article.style.animationDelay = `${Math.min(i, 6) * 45}ms`;
-    const [a, m, j] = n.date.split("-").map(Number);
+    const carte = document.createElement("article");
+    carte.className = "carte news-carte";
+    carte.style.animationDelay = `${Math.min(i, 6) * 40}ms`;
+    const tete = document.createElement("header");
     const date = document.createElement("time");
+    date.className = "donnee";
     date.dateTime = n.date;
-    const jour = document.createElement("b");
-    jour.textContent = j ? String(j) : n.date;
-    const nomMois = document.createElement("span");
-    nomMois.textContent = mois[m - 1] ?? "";
-    date.append(jour, nomMois);
-    const corps = document.createElement("div");
-    const titre = document.createElement("h3");
-    titre.textContent = n.titre;
-    const age = (aujourdhui.getTime() - new Date(a, m - 1, j).getTime()) / 864e5;
-    if (i === 0 && age < 7) {
-      article.className = "recente";
+    date.textContent = n.date;
+    tete.append(date);
+    if (i === 0 && recente(n)) {
+      carte.classList.add("recente");
       const badge = document.createElement("span");
       badge.className = "badge";
       badge.textContent = "Nouveau";
-      titre.append(badge);
+      tete.append(badge);
     }
+    const titre = document.createElement("h3");
+    titre.textContent = n.titre;
     const texte = document.createElement("p");
     texte.textContent = n.texte;
-    corps.append(titre, texte);
-    if (n.lien) {
-      const lien = n.lien;
-      const bouton = document.createElement("button");
-      bouton.className = "lien-news";
-      bouton.textContent = lien.nom;
-      bouton.append(icone("fleche", "fleche"));
-      bouton.onclick = () => ouvrirLien(lien.url);
-      corps.append(bouton);
-    }
-    article.append(date, corps);
-    zone.append(article);
+    carte.append(tete, titre, texte);
+    if (n.lien) carte.append(boutonLienNews(n.lien));
+    zone.append(carte);
   });
+  const n = triee[0];
+  const date = document.createElement("time");
+  date.className = "donnee";
+  date.dateTime = n.date;
+  date.textContent = n.date + (recente(n) ? " · nouveau" : "");
+  const titre = document.createElement("h3");
+  titre.textContent = n.titre;
+  const texte = document.createElement("p");
+  texte.className = "texte";
+  texte.textContent = n.texte;
+  une.append(date, titre, texte);
+  if (n.lien) une.append(boutonLienNews(n.lien));
 }
 
 function rendreLiens(liens: Lien[]) {
   const zone = el("liens");
+  const courts = el("liens-courts");
   zone.replaceChildren();
+  courts.replaceChildren();
+  el("bloc-raccourcis").hidden = !liens.length;
+  if (!liens.length) zone.append(texteVide("Aucun lien publié par le serveur."));
   for (const lien of liens) {
     const type = lien.icone || "site";
-    const bouton = document.createElement("button");
-    bouton.className = `lien lien-${type}`;
+    const carte = document.createElement("button");
+    carte.className = "lien-carte";
     const texte = document.createElement("span");
-    texte.className = "lien-texte";
     const nom = document.createElement("b");
     nom.textContent = lien.nom;
     const sous = document.createElement("small");
     sous.textContent = lien.description || SOUS_TITRES[type] || "";
     texte.append(nom, sous);
-    bouton.append(icone(type, "lien-icone"), texte, icone("fleche", "fleche"));
-    bouton.onclick = () => ouvrirLien(lien.url);
-    zone.append(bouton);
+    carte.append(icone(type, "icone"), texte, icone("fleche", "fleche"));
+    carte.onclick = () => ouvrirLien(lien.url);
+    zone.append(carte);
+
+    const court = document.createElement("button");
+    court.className = "lien-court";
+    const b = document.createElement("b");
+    b.textContent = lien.nom;
+    court.append(icone(type, "icone"), b, icone("fleche", "fleche"));
+    court.onclick = () => ouvrirLien(lien.url);
+    courts.append(court);
   }
+}
+
+type Vue = "accueil" | "news" | "liens" | "parametres";
+const TITRES_VUES: Record<Vue, string> = { accueil: "Jouer", news: "Actualités", liens: "Liens", parametres: "Paramètres" };
+
+function montrer(vue: Vue) {
+  document.querySelectorAll<HTMLElement>("[data-panneau]").forEach((p) => (p.hidden = p.dataset.panneau !== vue));
+  document.querySelectorAll<HTMLButtonElement>(".nav").forEach((b) => {
+    if (b.dataset.vue === vue) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
+  el("titre-vue").textContent = TITRES_VUES[vue];
 }
 
 function rendre() {
   const l = accueil.launcher;
-  el("titre-nom").textContent = l?.serveur.nom ?? __NOM_LAUNCHER__;
+  el("titre-nom").textContent = __NOM_LAUNCHER__;
+  el("serveur-nom").textContent = l?.serveur.nom ?? __NOM_LAUNCHER__;
   el("ligne-teamspeak").hidden = !utiliseTeamspeak();
-  el("adresse").textContent = l ? `${l.serveur.hote}:${l.serveur.port}` : "";
-  el("titre-fiche").hidden = el("fiche").hidden = !l;
+  el("adresse").textContent = l ? `${l.serveur.hote}:${l.serveur.port}` : "—";
+  el("nb-mods").textContent = l ? `${l.mods.length}` : "—";
   el("hors-ligne").hidden = !accueil.hors_ligne;
   rendreNews(l?.news ?? []);
   rendreLiens(l?.liens ?? []);
@@ -345,7 +391,8 @@ async function statut() {
   el("joueurs").textContent = info ? String(info.joueurs) : "—";
   el("joueurs-max").textContent = info ? `/${info.max}` : "";
   el("sous-compte").textContent = info ? "joueurs connectés" : "aucune réponse du serveur";
-  if (info) el("carte").textContent = info.carte;
+  el("mini-joueurs").textContent = info ? `${info.joueurs}/${info.max} joueurs` : "";
+  if (info) el("carte").textContent = info.carte || "—";
 }
 
 function utiliseTeamspeak(): boolean {
@@ -387,7 +434,7 @@ function ouvrirParametres() {
   el<HTMLSelectElement>("p-apres").value = r.apres_lancement;
   el<HTMLInputElement>("p-teamspeak").checked = r.rejoindre_teamspeak;
   erreurDialogue(null);
-  el<HTMLDialogElement>("parametres").showModal();
+  montrer("parametres");
 }
 
 async function choisirDossier(champ: string) {
@@ -409,7 +456,9 @@ async function enregistrer() {
   };
   const deplace = reglages.dossier_mods.toLowerCase() !== accueil.reglages.dossier_mods.toLowerCase();
   const etat = el("p-etat");
-  const boutons = ["enregistrer", "annuler", "integrite", "fermer-parametres", "choisir-arma", "choisir-mods"].map((id) => el<HTMLButtonElement>(id));
+  const boutons = ["enregistrer", "annuler", "integrite", "choisir-arma", "choisir-mods"].map((id) => el<HTMLButtonElement>(id));
+  document.querySelectorAll<HTMLButtonElement>(".nav").forEach((b) => boutons.push(b));
+  let enregistre = false;
   erreurDialogue(null);
   if (deplace) {
     occupe = true;
@@ -421,7 +470,8 @@ async function enregistrer() {
   }
   try {
     accueil = await invoke<Accueil>("sauver_reglages", { reglages });
-    el<HTMLDialogElement>("parametres").close();
+    enregistre = true;
+    montrer("accueil");
     erreur(null);
   } catch (e) {
     erreurDialogue(String(e));
@@ -431,7 +481,7 @@ async function enregistrer() {
     etat.hidden = true;
     jauge(null);
   }
-  if (!el<HTMLDialogElement>("parametres").open) {
+  if (enregistre) {
     rendre();
     if (accueil.launcher) await verifier();
   }
@@ -493,10 +543,11 @@ el("installer-teamspeak").onclick = () => ouvrirLien(TELECHARGER_TEAMSPEAK);
 el("ouvrir-parametres").onclick = ouvrirParametres;
 el("choisir-arma").onclick = () => choisirDossier("p-arma");
 el("choisir-mods").onclick = () => choisirDossier("p-mods");
-el("annuler").onclick = () => el<HTMLDialogElement>("parametres").close();
-el("fermer-parametres").onclick = () => el<HTMLDialogElement>("parametres").close();
-el("parametres").addEventListener("cancel", (e) => {
-  if (occupe) e.preventDefault();
+el("annuler").onclick = () => montrer("accueil");
+el("voir-news").onclick = () => montrer("news");
+document.querySelectorAll<HTMLButtonElement>(".nav").forEach((b) => {
+  const vue = b.dataset.vue as Vue;
+  if (vue !== "parametres") b.onclick = () => montrer(vue);
 });
 el("enregistrer").onclick = enregistrer;
 el("integrite").onclick = async () => {
@@ -504,7 +555,7 @@ el("integrite").onclick = async () => {
     erreur("Opération en cours, patientez.");
     return;
   }
-  el<HTMLDialogElement>("parametres").close();
+  montrer("accueil");
   await verifier(true);
 };
 el("installer-tfar").onclick = () => invoke("tfar_installer").catch((e) => erreur(String(e)));
@@ -527,6 +578,3 @@ async function demarrer() {
 }
 
 demarrer().catch((e) => erreur(String(e)));
-try {
-  poserTopo(document.querySelector<HTMLElement>(".entete")!);
-} catch {}

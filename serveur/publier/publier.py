@@ -53,79 +53,90 @@ PAGE = """<!doctype html>
 <title>%(nom)s - Launcher</title>
 <style>
   :root {
-    --fond: #0b0f12; --surface: #12181d; --trait: #233039;
-    --texte: #eceeea; --discret: #8b98a1; --accent: #6cb8e6; --ok: #5fc98a;
+    --fond: #141618; --surface: #1c1f22; --relief: #262a2e; --trait: rgb(255 255 255 / .08);
+    --texte: #e4e2da; --discret: #969a91; --accent: #8a9a5b; --sur-accent: #101210;
+    --corps: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --donnees: "IBM Plex Mono", "Cascadia Mono", Consolas, ui-monospace, monospace;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0; min-height: 100vh; background: var(--fond); color: var(--texte);
-    font: 16px/1.6 "Segoe UI", system-ui, sans-serif;
-    display: flex; flex-direction: column; align-items: center;
-  }
-  header { width: 100%%; padding: 48px 16px 72px; text-align: center; border-bottom: 1px solid var(--trait); background: var(--surface); }
-  h1 { margin: 0 0 8px; font-size: clamp(30px, 7vw, 46px); letter-spacing: .04em; }
-  .accroche { margin: 0; color: var(--discret); }
-  main { width: 100%%; max-width: 820px; padding: 0 16px 56px; }
-  .telecharger {
-    display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
-    margin: -40px auto 40px; padding: 28px 20px; max-width: 520px;
-    background: var(--surface); border: 1px solid var(--trait); border-radius: 12px;
-  }
+  body { margin: 0; min-height: 100vh; background: var(--fond); color: var(--texte); font: 16px/1.6 var(--corps); }
+  .cadre { width: 100%%; max-width: 920px; margin: 0 auto; padding: 0 16px; }
+  .etiquette { font: 500 12px/1.3 var(--donnees); letter-spacing: .14em; text-transform: uppercase; color: var(--discret); margin: 0; }
+  header { border-bottom: 1px solid var(--trait); background: var(--surface); }
+  header .cadre { padding-top: 56px; padding-bottom: 48px; }
+  h1 { margin: 10px 0 8px; font-size: clamp(32px, 7vw, 52px); font-weight: 600; line-height: 1.1; letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .accroche { margin: 0; color: var(--discret); max-width: 560px; }
+  .telecharger { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 32px; }
   .bouton {
-    display: inline-block; padding: 16px 32px; border-radius: 8px;
-    background: var(--accent); color: var(--fond); font-size: 18px; font-weight: 700;
-    letter-spacing: .04em; text-decoration: none;
+    display: inline-block; padding: 18px 34px; background: var(--accent); color: var(--sur-accent);
+    font-weight: 600; letter-spacing: .18em; text-transform: uppercase; text-decoration: none;
+    clip-path: polygon(0 0, calc(100%% - 14px) 0, 100%% 14px, 100%% 100%%, 14px 100%%, 0 calc(100%% - 14px));
   }
   .bouton:hover { filter: brightness(1.1); }
-  .version { color: var(--discret); font-size: 14px; }
-  h2 { margin: 32px 0 12px; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .bouton:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .version { font: 13px/1.5 var(--donnees); color: var(--discret); }
+  main .cadre { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%%, 400px), 1fr)); gap: 16px; padding-top: 32px; padding-bottom: 56px; }
+  section { background: var(--surface); border: 1px solid var(--trait); border-radius: 4px; padding: 20px 22px; }
+  section h2 { margin: 0 0 14px; }
   ol, ul { margin: 0; padding-left: 20px; }
   li { margin-bottom: 8px; }
-  .liens { display: flex; flex-wrap: wrap; gap: 10px; }
-  .lien {
-    padding: 10px 18px; border-radius: 8px; text-decoration: none; color: var(--texte);
-    background: var(--surface); border: 1px solid var(--trait); border-left: 3px solid var(--accent);
-  }
+  li::marker { color: var(--accent); font-family: var(--donnees); }
+  .liens { display: grid; gap: 8px; }
+  .lien { display: block; padding: 10px 14px; text-decoration: none; color: var(--texte); background: var(--relief); border: 1px solid transparent; border-radius: 4px; }
   .lien:hover { border-color: var(--accent); }
   .vide { color: var(--discret); }
-  code { background: var(--surface); border: 1px solid var(--trait); border-radius: 4px; padding: 2px 6px; font-size: 14px; overflow-wrap: anywhere; }
-  footer { color: var(--discret); font-size: 13px; padding: 24px 16px; text-align: center; }
+  code { font: 15px/1.5 var(--donnees); color: var(--accent); overflow-wrap: anywhere; }
+  footer { border-top: 1px solid var(--trait); }
+  footer .cadre { color: var(--discret); font: 13px/1.5 var(--donnees); padding-top: 20px; padding-bottom: 28px; }
 </style>
 </head>
 <body>
   <header>
-    <h1>%(nom)s</h1>
-    <p class="accroche">Le launcher installe les mods, les tient &agrave; jour et vous connecte au serveur.</p>
+    <div class="cadre">
+      <p class="etiquette">Launcher officiel</p>
+      <h1>%(nom)s</h1>
+      <p class="accroche">Le launcher installe les mods du serveur, les tient &agrave; jour et lance Arma 3 directement sur le serveur.</p>
+      <div class="telecharger">
+%(telecharger)s
+      </div>
+    </div>
   </header>
 
   <main>
-    <div class="telecharger">
-%(telecharger)s
-    </div>
+    <div class="cadre">
+      <section>
+        <h2 class="etiquette">Installation</h2>
+        <ol>
+          <li>T&eacute;l&eacute;chargez puis lancez l'installeur (aucun droit administrateur n'est demand&eacute;).</li>
+          <li>Ouvrez le launcher : il t&eacute;l&eacute;charge les mods du serveur (%(taille)s).</li>
+          <li>Cliquez sur <strong>JOUER</strong> : Arma 3 d&eacute;marre et rejoint le serveur.</li>
+        </ol>
+      </section>
 
-    <h2>Installation</h2>
-    <ol>
-      <li>T&eacute;l&eacute;chargez puis lancez l'installeur (aucun droit administrateur n'est demand&eacute;).</li>
-      <li>Ouvrez le launcher : il t&eacute;l&eacute;charge les mods du serveur (%(taille)s).</li>
-      <li>Cliquez sur <strong>JOUER</strong> : Arma 3 d&eacute;marre et rejoint le serveur.</li>
-    </ol>
+      <section>
+        <h2 class="etiquette">Avant de jouer</h2>
+        <ul>
+          <li>Arma 3 install&eacute; sur Steam.</li>
+%(tfar)s        </ul>
+      </section>
 
-    <h2>Avant de jouer</h2>
-    <ul>
-      <li>Arma 3 install&eacute; sur Steam.</li>
-%(tfar)s    </ul>
-
-    <h2>Liens</h2>
-    <div class="liens">
+      <section>
+        <h2 class="etiquette">Liens</h2>
+        <div class="liens">
 %(liens)s
-    </div>
+        </div>
+      </section>
 
-    <h2>Connexion directe</h2>
-    <p>Adresse du serveur : <code>%(adresse)s</code> (le launcher s'en charge tout seul).</p>
+      <section>
+        <h2 class="etiquette">Connexion directe</h2>
+        <p><code>%(adresse)s</code></p>
+        <p class="vide">Le launcher s'en charge tout seul ; cette adresse sert pour rejoindre le serveur depuis Arma.</p>
+      </section>
+    </div>
   </main>
 
-  <footer>%(nom)s &middot; %(annee)s</footer>
+  <footer><div class="cadre">%(nom)s &middot; %(annee)s</div></footer>
 </body>
 </html>
 """
@@ -427,7 +438,7 @@ def page_accueil(config, version, octets, tfar):
     liens = [l for l in config.get("liens", []) if str(l.get("url", "")).lower().startswith(SCHEMAS_LIENS)]
     boutons = "\n".join('      <a class="lien" href="%s">%s</a>' % (e(l["url"], quote=True), e(l.get("nom", "Lien"))) for l in liens)
     if version:
-        telecharger = ('      <a class="bouton" href="/update/%s">T&Eacute;L&Eacute;CHARGER LE LAUNCHER</a>\n'
+        telecharger = ('      <a class="bouton" href="/update/%s">T&eacute;l&eacute;charger le launcher</a>\n'
                        '      <span class="version">Windows 64 bits &middot; version %s &middot; mise &agrave; jour automatique</span>'
                        % (INSTALLEUR_STABLE, e(version)))
     else:

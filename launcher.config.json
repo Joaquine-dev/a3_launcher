@@ -9,11 +9,11 @@
   "editeur": "",
   "devise": "Un serveur, mille histoires…",
   "couleurs": {
-    "fond": "#0b0f12",
-    "surface": "#12181d",
-    "relief": "#1a2229",
-    "texte": "#eceeea",
-    "accent": "#6cb8e6",
-    "soleil": "#e9b44c"
+    "fond": "#141618",
+    "surface": "#1c1f22",
+    "relief": "#262a2e",
+    "texte": "#e4e2da",
+    "accent": "#8a9a5b",
+    "alerte": "#d4a849"
   }
 }

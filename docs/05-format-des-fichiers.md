@@ -41,13 +41,13 @@ Lu par le launcher à chaque démarrage. Vous éditez `serveur/config/launcher.j
 | Champ | Obligatoire | Rôle |
 |---|---|---|
 | `version` | oui | Version du **format**, toujours `1`. Un launcher qui ne la connaît pas affiche « mettez à jour le launcher » et ne lance pas le jeu. |
-| `serveur.nom` | oui | Nom affiché dans la barre de titre et sur la page d'accueil. |
+| `serveur.nom` | oui | Nom affiché en titre de l'écran « Jouer » et sur la page de téléchargement. |
 | `serveur.hote` | oui | Adresse du serveur de jeu (nom ou IP) : `-connect=`. |
 | `serveur.port` | oui | Port de jeu (`-port=`, souvent `2302`). L'état du serveur est demandé en A2S (requête Steam) sur **port + 1**. |
 | `serveur.motDePasse` | non | Mot de passe du serveur (`-password=`). **Public** : `launcher.json` est lisible par tout le monde. À réserver à un mot de passe sans valeur secrète, ou à laisser vide. |
 | `mods` | ajouté | Liste des dossiers `@Mod`, dans l'ordre de `-mod=`. Ce sont les **seuls** dossiers que le launcher gère (télécharge, met à jour, nettoie). Dans `config/launcher.json`, une liste `mods` facultative ne sert qu'à imposer l'ordre (voir [04](04-publier-une-mise-a-jour.md#ordre-de-chargement)). |
 | `parametres` | non | Paramètres Arma ajoutés à la ligne de commande, séparés par des espaces. Le launcher ajoute `-world=empty` (démarrage plus rapide) sauf si un `-world=` est déjà fourni ici ou par le joueur. |
-| `liens[]` | non | Boutons de la colonne « Rejoindre ». `nom`, `url`, `icone` (`teamspeak`, `discord`, `site` ; toute autre valeur prend l'icône `site`), `description` facultative (sous-titre). |
+| `liens[]` | non | Boutons de l'écran « Liens » et du bloc « Rejoindre » de l'écran « Jouer ». `nom`, `url`, `icone` (`teamspeak`, `discord`, `site` ; toute autre valeur prend l'icône `site`), `description` facultative (sous-titre). |
 | `news[]` | non | Actualités : `date` (`AAAA-MM-JJ`), `titre`, `texte` (texte brut, `\n` pour aller à la ligne), `lien` facultatif (`nom`, `url`). La plus récente de moins de 7 jours porte un badge « Nouveau ». |
 | `tfarPlugin` | ajouté | Chemin relatif du plugin TeamSpeak TFAR. Absent : aucune vérification du plugin. |
 | `tfarDll` | ajouté | SHA-256 (64 caractères hexadécimaux) de `TFAR_win64.dll` contenue dans le plugin. Le launcher la compare à `%APPDATA%\TS3Client\plugins\TFAR_win64.dll` pour signaler un plugin périmé. |
