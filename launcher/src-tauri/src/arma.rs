@@ -114,9 +114,9 @@ mod tests {
         assert_eq!(sans.iter().filter(|a| a.starts_with("-world=")).count(), 1);
         assert!(sans.contains(&"-world=empty".to_string()));
 
-        let pose = arguments(&Lancement { dossier_mods: &dossier, mods: &m, parametres_serveur: "", parametres_joueur: "-world=Altis", hote: "h", port: 2302, mot_de_passe: "" });
+        let pose = arguments(&Lancement { dossier_mods: &dossier, mods: &m, parametres_serveur: "", parametres_joueur: "-world=Stratis", hote: "h", port: 2302, mot_de_passe: "" });
         assert_eq!(pose.iter().filter(|a| a.starts_with("-world=")).count(), 1);
-        assert!(pose.contains(&"-world=Altis".to_string()));
+        assert!(pose.contains(&"-world=Stratis".to_string()));
     }
 
     #[test]

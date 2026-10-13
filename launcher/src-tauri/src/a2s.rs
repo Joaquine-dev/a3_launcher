@@ -75,7 +75,7 @@ mod tests {
 
     fn reponse_info() -> Vec<u8> {
         let mut v = vec![0xFF, 0xFF, 0xFF, 0xFF, 0x49, 0x11];
-        for s in ["Mon Serveur", "Altis", "Arma3", "Arma 3"] {
+        for s in ["Mon Serveur", "Stratis", "Arma3", "Arma 3"] {
             v.extend_from_slice(s.as_bytes());
             v.push(0);
         }
@@ -97,7 +97,7 @@ mod tests {
         assert_eq!(decoder(&[0xFF, 0xFF, 0xFF, 0xFF, 0x41, 9, 8, 7, 6]).unwrap(), Reponse::Challenge([9, 8, 7, 6]));
         assert_eq!(
             decoder(&reponse_info()).unwrap(),
-            Reponse::Info(InfoServeur { nom: "Mon Serveur".into(), carte: "Altis".into(), joueurs: 12, max: 32 })
+            Reponse::Info(InfoServeur { nom: "Mon Serveur".into(), carte: "Stratis".into(), joueurs: 12, max: 32 })
         );
     }
 
