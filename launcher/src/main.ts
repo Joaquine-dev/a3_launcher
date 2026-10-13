@@ -16,7 +16,8 @@ type Launcher = {
   parametres: string;
   liens: Lien[];
   news: News[];
-  tfarPlugin: string;
+  tfarPlugin?: string;
+  tfarVersion?: "stable" | "beta" | "";
 };
 type Accueil = { reglages: Reglages; launcher: Launcher | null; hors_ligne: boolean; erreur: string | null; arma_detecte: boolean };
 type Resume = { fichiers: number; octets: number; a_supprimer: number; pret: boolean; hors_ligne: boolean; espace_manquant: number };
@@ -404,9 +405,11 @@ async function controles() {
   const c = await invoke<Controles>("controles").catch((): Controles => ({ teamspeak: true, tfar: "ok" }));
   el("bandeau-teamspeak").hidden = c.teamspeak || !utiliseTeamspeak();
   el("bandeau-tfar").hidden = !c.teamspeak || c.tfar === "ok" || !accueil?.launcher?.tfarPlugin || accueil.hors_ligne;
+  const libelles: Record<string, string> = { stable: " (version stable 0.9)", beta: " (version 1.0 bêta)" };
+  const version = libelles[accueil?.launcher?.tfarVersion ?? ""] ?? "";
   el("texte-tfar").textContent = c.tfar === "perime"
-    ? "Votre plugin TFAR n'est pas celui du serveur : pas de voix ni de radio en jeu. Fermez TeamSpeak puis mettez-le à jour."
-    : "Le plugin TeamSpeak TFAR manque : pas de voix ni de radio en jeu.";
+    ? `Votre plugin TFAR n'est pas celui du serveur${version} : pas de voix ni de radio en jeu. Fermez TeamSpeak puis mettez-le à jour.`
+    : `Le plugin TeamSpeak TFAR du serveur${version} manque : pas de voix ni de radio en jeu.`;
   el("installer-tfar").textContent = c.tfar === "perime" ? "Mettre à jour" : "Installer";
 }
 

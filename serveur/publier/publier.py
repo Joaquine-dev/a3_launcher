@@ -5,7 +5,7 @@
 
 Dossiers (montes par docker-compose.yml, modifiables par variables d'environnement) :
 
-    MODS            /mods             les dossiers @Mod a distribuer (+ un .ts3_plugin facultatif)
+    MODS            /mods             les dossiers @Mod a distribuer (TFAR y livre son .ts3_plugin)
     CONFIG          /config           launcher.json edite a la main (serveur, liens, news)
     LAUNCHER_BUILD  /launcher-build   installeur NSIS *_x64-setup.exe et sa signature .sig (facultatif)
     DONNEES         /donnees          ce que nginx sert
@@ -234,39 +234,117 @@ def lister_mods(preference):
     return ordre + [m for m in presents if m not in ordre]
 
 
-def plugin_tfar():
-    plugins = sorted(n for n in os.listdir(MODS) if n.lower().endswith(".ts3_plugin") and os.path.isfile(os.path.join(MODS, n)))
-    if len(plugins) > 1:
-        print("  [!] plusieurs .ts3_plugin dans %s, seul %s est publie" % (MODS, plugins[0]))
-    return os.path.join(MODS, plugins[0]) if plugins else None
+DLL_TFAR = {"stable": "plugins/task_force_radio_win64.dll", "beta": "plugins/TFAR_win64.dll"}
+VERSIONS_TFAR = ("stable", "beta")
+
+
+def lire_tfar(config):
+    """Bloc "tfar" de config/launcher.json : None si TFAR n'est pas publie, sinon {actif, version, plugin, ancien}.
+    Sans bloc (ancien format) : un .ts3_plugin pose a la racine de mods/ est encore publie."""
+    bloc = config.get("tfar")
+    if bloc is None:
+        return {"actif": True, "version": "", "plugin": "", "ancien": True}
+    if not isinstance(bloc, dict):
+        sortir("launcher.json : \"tfar\" doit etre un objet { \"actif\", \"version\", \"plugin\" }")
+    if not isinstance(bloc.get("actif", False), bool):
+        sortir("launcher.json : tfar.actif doit valoir true ou false")
+    if not bloc.get("actif"):
+        return None
+    version = bloc.get("version", "stable")
+    if version not in VERSIONS_TFAR:
+        sortir("launcher.json : tfar.version doit valoir \"stable\" (TFAR 0.9.x) ou \"beta\" (TFAR 1.0)")
+    plugin = bloc.get("plugin", "") or ""
+    if not isinstance(plugin, str) or (plugin and not relatif_sur(plugin)):
+        sortir("launcher.json : tfar.plugin doit etre vide (detection automatique) ou un chemin relatif a mods/ ou config/")
+    return {"actif": True, "version": version, "plugin": plugin, "ancien": False}
+
+
+def plugins_dans_les_mods(mods):
+    trouves = []
+    for mod in mods:
+        for dossier, sous, noms in os.walk(os.path.join(MODS, mod)):
+            sous[:] = sorted(n for n in sous if not ignore(n))
+            for nom in sorted(noms):
+                if nom.lower().endswith(".ts3_plugin") and not ignore(nom):
+                    trouves.append(os.path.join(dossier, nom))
+    return trouves
+
+
+def plugin_tfar(reglage, mods):
+    """Chemin du .ts3_plugin a publier, ou None."""
+    if reglage is None:
+        return None
+    if reglage["ancien"]:
+        plugins = sorted(n for n in os.listdir(MODS) if n.lower().endswith(".ts3_plugin") and os.path.isfile(os.path.join(MODS, n)))
+        if len(plugins) > 1:
+            print("  [!] plusieurs .ts3_plugin dans %s, seul %s est publie" % (MODS, plugins[0]))
+        if plugins:
+            print("  [!] plugin TFAR a la racine de mods/ : ajoutez plutot un bloc \"tfar\" a config/launcher.json (voir launcher.exemple.json)")
+        return os.path.join(MODS, plugins[0]) if plugins else None
+    if reglage["plugin"]:
+        for base in (MODS, CONFIG):
+            chemin = os.path.join(base, *reglage["plugin"].split("/"))
+            if os.path.isfile(chemin):
+                return chemin
+        sortir("tfar.plugin introuvable dans mods/ ni dans config/ : %s" % reglage["plugin"])
+    trouves = plugins_dans_les_mods(mods)
+    if not trouves:
+        sortir("tfar.actif vaut true mais aucun .ts3_plugin dans les mods (TFAR le livre dans @.../teamspeak/) : "
+               "deposez le mod TFAR ou indiquez tfar.plugin")
+    distincts = {}
+    for chemin in trouves:
+        distincts.setdefault(sha256(chemin), chemin)
+    if len(distincts) > 1:
+        sortir("plusieurs plugins TFAR differents dans les mods, precisez lequel dans tfar.plugin :\n    "
+               + "\n    ".join(os.path.relpath(c, MODS).replace(os.sep, "/") for c in trouves))
+    return trouves[0]
 
 
 def nom_tfar(plugin):
     return re.sub(r"[^A-Za-z0-9._-]+", "-", os.path.basename(plugin)).lstrip(".-") or "task_force_radio.ts3_plugin"
 
 
-def empreinte_dll_tfar(plugin):
+def analyser_plugin_tfar(plugin):
+    """(version, sha256 de la DLL 64 bits) lus dans le .ts3_plugin (une archive zip) ; ("", "") si illisible."""
     try:
         with zipfile.ZipFile(plugin) as z:
-            return hashlib.sha256(z.read("plugins/TFAR_win64.dll")).hexdigest()
-    except (KeyError, zipfile.BadZipFile):
-        return ""
+            noms = set(z.namelist())
+            for version in VERSIONS_TFAR:
+                if DLL_TFAR[version] in noms:
+                    return version, hashlib.sha256(z.read(DLL_TFAR[version])).hexdigest()
+    except (OSError, zipfile.BadZipFile):
+        pass
+    return "", ""
+
+
+def infos_tfar(reglage, plugin):
+    if not plugin:
+        return None
+    version, dll = analyser_plugin_tfar(plugin)
+    if not version:
+        print("  [!] %s : ni %s ni %s dans l'archive, le launcher ne pourra pas verifier le plugin du joueur"
+              % (os.path.basename(plugin), DLL_TFAR["stable"], DLL_TFAR["beta"]))
+    elif reglage["version"] and version != reglage["version"]:
+        print("  [!] tfar.version vaut \"%s\" mais le plugin trouve est la version %s : c'est %s qui est publie"
+              % (reglage["version"], version, version))
+    return {"chemin": plugin, "nom": nom_tfar(plugin), "version": version or reglage["version"], "dll": dll}
 
 
 def config_publiee(config, mods, tfar):
     publiee = {}
     for cle, valeur in config.items():
-        if cle in ("mods", "tfarPlugin", "tfarDll"):
+        if cle in ("mods", "tfar", "tfarPlugin", "tfarDll", "tfarVersion"):
             continue
         publiee[cle] = valeur
         if cle == "serveur":
             publiee["mods"] = mods
     publiee.setdefault("mods", mods)
     if tfar:
-        publiee["tfarPlugin"] = "tfar/" + nom_tfar(tfar)
-        dll = empreinte_dll_tfar(tfar)
-        if dll:
-            publiee["tfarDll"] = dll
+        publiee["tfarPlugin"] = "tfar/" + tfar["nom"]
+        if tfar["dll"]:
+            publiee["tfarDll"] = tfar["dll"]
+        if tfar["version"]:
+            publiee["tfarVersion"] = tfar["version"]
     return publiee
 
 
@@ -443,7 +521,9 @@ def page_accueil(config, version, octets, tfar):
                        % (INSTALLEUR_STABLE, e(version)))
     else:
         telecharger = '      <span class="version">Le launcher n\'est pas encore publi&eacute;.</span>'
-    ts = '      <li>TeamSpeak 3 pour la radio : le launcher propose d\'installer le plugin TFAR s\'il manque.</li>\n' if tfar else ""
+    libelle = {"stable": " (version stable 0.9)", "beta": " (version 1.0 b&ecirc;ta)"}.get((tfar or {}).get("version"), "")
+    ts = ('          <li>TeamSpeak 3 en 64 bits (pas TeamSpeak 5 ni 6) avec le plugin radio TFAR%s : '
+          'le launcher propose de l\'installer s\'il manque.</li>\n' % libelle) if tfar else ""
     return PAGE % {
         "nom": nom,
         "telecharger": telecharger,
@@ -465,7 +545,8 @@ def main(argv):
 
     config = lire_config()
     mods = lister_mods(config.get("mods"))
-    tfar = plugin_tfar()
+    reglage_tfar = lire_tfar(config)
+    tfar = infos_tfar(reglage_tfar, plugin_tfar(reglage_tfar, mods))
     publiee = config_publiee(config, mods, tfar)
 
     maintenant = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -474,8 +555,8 @@ def main(argv):
     ancien = lire_json(os.path.join(DONNEES, "manifest.json"))
     envoyer, supprimer = delta(manifeste, ancien)
 
-    tfar_cible = os.path.join(DONNEES, "tfar", nom_tfar(tfar)) if tfar else None
-    tfar_change = bool(tfar) and (not os.path.isfile(tfar_cible) or sha256(tfar_cible) != sha256(tfar))
+    tfar_cible = os.path.join(DONNEES, "tfar", tfar["nom"]) if tfar else None
+    tfar_change = bool(tfar) and (not os.path.isfile(tfar_cible) or sha256(tfar_cible) != sha256(tfar["chemin"]))
 
     ancien_launcher = lire_json(os.path.join(DONNEES, "launcher.json"))
     launcher_change = ancien_launcher != publiee
@@ -492,7 +573,11 @@ def main(argv):
     print("  %d fichier(s) a supprimer" % len(supprimer))
     for c in supprimer:
         print("    - %s" % c)
-    print("  plugin TFAR : %s" % (("a copier : " if tfar_change else "inchange : ") + os.path.basename(tfar) if tfar else "aucun"))
+    if tfar:
+        print("  plugin TFAR (%s) : %s%s" % (tfar["version"] or "version inconnue", "a copier : " if tfar_change else "inchange : ",
+                                           os.path.relpath(tfar["chemin"], MODS).replace(os.sep, "/")))
+    else:
+        print("  plugin TFAR : aucun")
     print("  launcher.json : %s" % ("a ecrire" if launcher_change else "inchange"))
     if maj:
         print("  launcher : version %s %s" % (maj["version"], "a publier" if maj["a_publier"] else "deja publiee"))
@@ -507,7 +592,7 @@ def main(argv):
     for f in envoyer:
         copier_atomique(os.path.join(MODS, *f["chemin"].split("/")), os.path.join(DONNEES, "mods", *f["chemin"].split("/")))
     if tfar_change:
-        copier_atomique(tfar, tfar_cible)
+        copier_atomique(tfar["chemin"], tfar_cible)
     if launcher_change:
         ecrire_atomique(json_texte(publiee), os.path.join(DONNEES, "launcher.json"))
     if envoyer or supprimer or ancien is None:
@@ -517,7 +602,7 @@ def main(argv):
     tfar_dossier = os.path.join(DONNEES, "tfar")
     if os.path.isdir(tfar_dossier):
         for nom in os.listdir(tfar_dossier):
-            if not tfar or nom != nom_tfar(tfar):
+            if not tfar or nom != tfar["nom"]:
                 os.remove(os.path.join(tfar_dossier, nom))
     if maj and maj["a_publier"]:
         publier_launcher(maj)

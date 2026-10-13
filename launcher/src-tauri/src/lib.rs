@@ -298,8 +298,8 @@ async fn veille_serveur(hote: String, port: u16, partage: State<'_, Partage>) ->
 
 #[tauri::command]
 async fn controles(partage: State<'_, Partage>) -> Result<Controles, ()> {
-    let attendu = partage.0.lock().await.launcher.as_ref().map(|l| l.tfar_dll.clone()).unwrap_or_default();
-    let tfar = tauri::async_runtime::spawn_blocking(move || tfar::etat(&attendu)).await.unwrap_or(tfar::Etat::Absent);
+    let (version, attendu) = partage.0.lock().await.launcher.as_ref().map(|l| (l.tfar_version.clone(), l.tfar_dll.clone())).unwrap_or_default();
+    let tfar = tauri::async_runtime::spawn_blocking(move || tfar::etat(&version, &attendu)).await.unwrap_or(tfar::Etat::Absent);
     Ok(Controles { teamspeak: controles::teamspeak_installe(), tfar })
 }
 

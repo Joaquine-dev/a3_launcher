@@ -34,6 +34,8 @@ jobs:
       - run: npm run build
       - run: cargo test --lib
         working-directory: launcher/src-tauri
+      - run: python -m unittest discover -s serveur/publier -v
+        working-directory: .
 
   installeur:
     needs: tests

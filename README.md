@@ -7,7 +7,7 @@ Le joueur installe le launcher une fois. Ensuite, à chaque ouverture, il :
 - télécharge seulement les fichiers de mods qui ont changé (vérifiés par SHA-256) ;
 - lance Arma 3 avec BattlEye, les bons mods et la connexion directe au serveur (mot de passe compris) ;
 - affiche l'état du serveur (joueurs connectés, carte), vos actualités et vos liens (Discord, TeamSpeak, site) ;
-- propose le plugin TeamSpeak TFAR s'il manque (facultatif) ;
+- vérifie et propose le plugin TeamSpeak TFAR, version stable 0.9 ou bêta 1.0 (option à activer côté serveur) ;
 - se met à jour tout seul quand vous publiez une nouvelle version.
 
 ![Le launcher : état du serveur, dernière actualité, liens et bouton JOUER](docs/captures/accueil.png)

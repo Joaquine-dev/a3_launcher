@@ -16,7 +16,7 @@ Toutes les adresses ci-dessous sont relatives à `urlServeur` (`launcher.config.
 
 ## `launcher.json`
 
-Lu par le launcher à chaque démarrage. Vous éditez `serveur/config/launcher.json` ; `publier` y ajoute `mods`, `tfarPlugin` et `tfarDll` avant de le publier.
+Lu par le launcher à chaque démarrage. Vous éditez `serveur/config/launcher.json` ; `publier` y ajoute `mods` et, si le bloc `tfar` est actif, `tfarPlugin`, `tfarVersion` et `tfarDll` avant de le publier (le bloc `tfar` lui-même n'est pas publié).
 
 ```json
 {
@@ -33,7 +33,8 @@ Lu par le launcher à chaque démarrage. Vous éditez `serveur/config/launcher.j
     { "date": "2026-01-15", "titre": "Bienvenue", "texte": "Texte brut.\nDeuxième ligne.", "lien": { "nom": "En savoir plus", "url": "https://www.example.com" } }
   ],
   "tfarPlugin": "tfar/task_force_radio.ts3_plugin",
-  "tfarDll": "<sha256 de plugins/TFAR_win64.dll>",
+  "tfarVersion": "stable",
+  "tfarDll": "<sha256 de la DLL 64 bits du plugin>",
   "etatServeur": "api/serveur/etat"
 }
 ```
@@ -49,8 +50,10 @@ Lu par le launcher à chaque démarrage. Vous éditez `serveur/config/launcher.j
 | `parametres` | non | Paramètres Arma ajoutés à la ligne de commande, séparés par des espaces. Le launcher ajoute `-world=empty` (démarrage plus rapide) sauf si un `-world=` est déjà fourni ici ou par le joueur. |
 | `liens[]` | non | Boutons de l'écran « Liens » et du bloc « Rejoindre » de l'écran « Jouer ». `nom`, `url`, `icone` (`teamspeak`, `discord`, `site` ; toute autre valeur prend l'icône `site`), `description` facultative (sous-titre). |
 | `news[]` | non | Actualités : `date` (`AAAA-MM-JJ`), `titre`, `texte` (texte brut, `\n` pour aller à la ligne), `lien` facultatif (`nom`, `url`). La plus récente de moins de 7 jours porte un badge « Nouveau ». |
+| `tfar` | non | Dans `config/launcher.json` seulement : `{ "actif": false, "version": "stable", "plugin": "" }`. Voir [04, TFAR](04-publier-une-mise-a-jour.md#tfar-task-force-radio). `actif: false` ou bloc absent sans `.ts3_plugin` à la racine de `mods/` : aucun des trois champs suivants n'est publié et le launcher n'affiche rien de TFAR. |
 | `tfarPlugin` | ajouté | Chemin relatif du plugin TeamSpeak TFAR. Absent : aucune vérification du plugin. |
-| `tfarDll` | ajouté | SHA-256 (64 caractères hexadécimaux) de `TFAR_win64.dll` contenue dans le plugin. Le launcher la compare à `%APPDATA%\TS3Client\plugins\TFAR_win64.dll` pour signaler un plugin périmé. |
+| `tfarVersion` | ajouté | `stable` (TFAR 0.9.x) ou `beta` (TFAR 1.0), lue dans le plugin. Choisit la DLL que le launcher contrôle : `task_force_radio_win64.dll` (stable) ou `TFAR_win64.dll` (bêta). Absente (ancien `launcher.json`) : l'une ou l'autre. |
+| `tfarDll` | ajouté | SHA-256 (64 caractères hexadécimaux) de la DLL 64 bits contenue dans le plugin (`plugins/task_force_radio_win64.dll` ou `plugins/TFAR_win64.dll`). Le launcher la compare à la DLL installée dans `%APPDATA%\TS3Client\plugins\` pour signaler un plugin périmé. |
 | `etatServeur` | non | Chemin relatif d'un point d'API **que vous fournissez** (voir plus bas). Absent : le launcher ne s'appuie que sur la requête A2S. |
 
 ### Règles de validation du launcher

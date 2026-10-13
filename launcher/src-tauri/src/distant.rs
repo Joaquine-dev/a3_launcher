@@ -48,6 +48,9 @@ pub struct LauncherJson {
     pub tfar_plugin: String,
     #[serde(rename = "tfarDll", default)]
     pub tfar_dll: String,
+    /// "stable" (TFAR 0.9.x) ou "beta" (TFAR 1.0) ; vide dans un launcher.json d'avant ce champ.
+    #[serde(rename = "tfarVersion", default)]
+    pub tfar_version: String,
     #[serde(rename = "etatServeur", default)]
     pub etat_serveur: String,
 }
@@ -183,6 +186,19 @@ mod tests {
         let avec_dll = |v: &str| EXEMPLE.replace("\"tfarPlugin\"", &format!("\"tfarDll\": \"{v}\", \"tfarPlugin\""));
         assert_eq!(analyser_launcher(&avec_dll(&"a".repeat(64))).unwrap().tfar_dll, "a".repeat(64));
         assert!(analyser_launcher(&avec_dll("zz")).is_err());
+    }
+
+    #[test]
+    fn tfar_facultatif_et_ancien_format_accepte() {
+        let ancien = analyser_launcher(EXEMPLE).unwrap();
+        assert_eq!(ancien.tfar_plugin, "tfar/task_force_radio.ts3_plugin");
+        assert_eq!(ancien.tfar_version, "");
+        let avec = EXEMPLE.replace("\"tfarPlugin\"", "\"tfarVersion\": \"beta\", \"tfarPlugin\"");
+        assert_eq!(analyser_launcher(&avec).unwrap().tfar_version, "beta");
+        let mut sans: serde_json::Value = serde_json::from_str(EXEMPLE).unwrap();
+        sans.as_object_mut().unwrap().remove("tfarPlugin");
+        let l = analyser_launcher(&sans.to_string()).unwrap();
+        assert!(l.tfar_plugin.is_empty() && l.tfar_dll.is_empty() && l.tfar_version.is_empty());
     }
 
     #[test]

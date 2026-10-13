@@ -27,7 +27,7 @@ Par défaut, les mods sont passés à Arma (`-mod=`) dans l'ordre alphabétique.
 
 ### Plugin TeamSpeak TFAR (facultatif)
 
-Si votre serveur utilise Task Force Radio, déposez le fichier `task_force_radio.ts3_plugin` **à la racine** de `serveur/mods/` (à côté des dossiers `@Mod`). `publier` le copie dans `donnees/tfar/`, ajoute `tfarPlugin` à `launcher.json` et, si l'archive contient `plugins/TFAR_win64.dll`, son empreinte `tfarDll` : le launcher signale alors au joueur un plugin absent ou différent de celui du serveur et propose de l'installer. Sans fichier `.ts3_plugin`, rien de tout cela n'apparaît.
+Si votre serveur utilise Task Force Radio, voir la section [TFAR](#tfar-task-force-radio) plus bas.
 
 ### Ordre de publication (pourquoi les joueurs connectés ne voient pas d'état cassé)
 
@@ -51,6 +51,40 @@ Exemple de news :
 ```
 
 Les news sont triées par date (la plus récente en haut) et affichées en texte brut : pas de HTML, mais `\n` passe à la ligne.
+
+## TFAR (Task Force Radio)
+
+TFAR fait passer la voix et la radio du jeu par TeamSpeak : chaque joueur doit avoir, dans son TeamSpeak, le **plugin de la même version que le mod du serveur**. Le launcher peut le vérifier et l'installer, à condition que vous l'activiez dans `config/launcher.json` :
+
+```json
+"tfar": { "actif": true, "version": "stable", "plugin": "" }
+```
+
+| Champ | Rôle |
+|---|---|
+| `actif` | `false` (par défaut dans l'exemple) : rien de TFAR n'est publié, le launcher n'affiche ni bandeau, ni bouton, ni vérification. |
+| `version` | `stable` ou `beta`, la version du mod TFAR de votre serveur (voir plus bas). Sert à l'affichage et à un contrôle : si le plugin trouvé est d'une autre version, `publier` vous prévient et publie la version réelle du plugin. |
+| `plugin` | Vide : détection automatique, `publier` cherche le fichier `.ts3_plugin` dans les mods déposés (TFAR le livre dans `@…/teamspeak/`). Sinon, chemin relatif à `mods/` ou à `config/`, par exemple `@task_force_radio/teamspeak/task_force_radio.ts3_plugin` ou `tfar/mon-plugin.ts3_plugin` (fichier posé dans `config/tfar/`). |
+
+Avec `actif: true`, `publier` copie le plugin dans `donnees/tfar/` et ajoute à `launcher.json` `tfarPlugin`, `tfarVersion` et `tfarDll` (empreinte SHA-256 de la DLL 64 bits contenue dans le plugin). Le launcher compare cette empreinte à la DLL installée dans `%APPDATA%\TS3Client\plugins\` et propose au joueur d'installer ou de mettre à jour le plugin (double-clic sur le `.ts3_plugin`, TeamSpeak fait le reste). Si plusieurs plugins **différents** se trouvent dans les mods, `publier` s'arrête et vous demande de préciser `plugin`.
+
+### Stable ou bêta ?
+
+| | Stable (0.9.x, en pratique 0.9.12) | Bêta (1.0) |
+|---|---|---|
+| Dossier du mod | `@task_force_radio` | `@TFAR` (GitHub) ; nom variable sur le Workshop |
+| Plugin livré | `@task_force_radio/teamspeak/task_force_radio.ts3_plugin` | `@TFAR/teamspeak/task_force_radio.ts3_plugin` |
+| DLL installée chez le joueur | `task_force_radio_win64.dll` | `TFAR_win64.dll` |
+
+La plupart des serveurs tournent en stable 0.9.x ; certains utilisent la 1.0 bêta. Les deux ne se mélangent pas : un joueur qui a le plugin 0.9 n'entend rien sur un serveur 1.0, et inversement. Le launcher regarde la DLL qui correspond à la version publiée.
+
+### Ce qu'il faut dire aux joueurs
+
+- **TeamSpeak 3, en 64 bits.** TeamSpeak 5 et 6 ne chargent pas les plugins TFAR. Le launcher signale un TeamSpeak 3 absent et propose de le télécharger.
+- **Pas de TFAR du Workshop en parallèle.** Un TFAR abonné sur le Steam Workshop (ou chargé par un autre launcher) dans une autre version peut remplacer le plugin dans TeamSpeak ou charger un second mod TFAR en jeu : désabonnez-le, le launcher fournit le bon.
+- Fermer TeamSpeak avant d'installer ou de mettre à jour le plugin (TeamSpeak verrouille la DLL qu'il utilise).
+
+Les anciennes configurations sans bloc `tfar` restent acceptées : un `.ts3_plugin` posé à la racine de `serveur/mods/` est encore publié (avec un avertissement), et un ancien `launcher.json` qui ne porte que `tfarPlugin` reste lu par le launcher.
 
 ## Nouvelle version du launcher
 

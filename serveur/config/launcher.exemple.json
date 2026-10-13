@@ -2,6 +2,7 @@
   "version": 1,
   "serveur": { "nom": "Mon Serveur Arma 3", "hote": "play.example.com", "port": 2302, "motDePasse": "" },
   "parametres": "-skipIntro -noSplash",
+  "tfar": { "actif": false, "version": "stable", "plugin": "" },
   "liens": [
     { "nom": "TeamSpeak", "url": "ts3server://play.example.com?port=9987", "icone": "teamspeak" },
     { "nom": "Discord", "url": "https://discord.gg/exemple", "icone": "discord" },
