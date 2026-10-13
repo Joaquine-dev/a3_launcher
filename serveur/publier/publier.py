@@ -467,41 +467,51 @@ def installeur_local():
     trouves = []
     for nom in os.listdir(LAUNCHER_BUILD):
         m = SETUP.match(nom)
-        if m and os.path.isfile(os.path.join(LAUNCHER_BUILD, nom + ".sig")):
+        if m and os.path.isfile(os.path.join(LAUNCHER_BUILD, nom)):
             trouves.append((cle_version(m.group("version")), nom, m.group("nom"), m.group("version")))
     if not trouves:
         return None
     _, nom, produit, version = max(trouves)
-    return {"fichier": os.path.join(LAUNCHER_BUILD, nom), "produit": produit, "version": version}
+    fichier = os.path.join(LAUNCHER_BUILD, nom)
+    return {"fichier": fichier, "produit": produit, "version": version, "signe": os.path.isfile(fichier + ".sig")}
 
 
 def preparer_launcher(installeur, notes):
     if not installeur:
         return None
+    nom = "%s_%s_x64-setup.exe" % (re.sub(r"[^A-Za-z0-9._-]+", "-", installeur["produit"]).strip("-") or "launcher", installeur["version"])
+    if not installeur["signe"]:
+        en_ligne = os.path.join(DONNEES, "update", nom)
+        a_publier = not os.path.isfile(en_ligne) or sha256(en_ligne) != sha256(installeur["fichier"]) \
+            or os.path.isfile(os.path.join(DONNEES, "update", "latest.json"))
+        return {"version": installeur["version"], "nom": nom, "a_publier": a_publier, "source": installeur["fichier"],
+                "latest": None, "signe": False}
     if not URL_PUBLIQUE.startswith(("https://", "http://")):
         sortir("URL_PUBLIQUE manquante (fichier .env) : necessaire pour update/latest.json")
     with open(installeur["fichier"] + ".sig", encoding="utf-8") as f:
         signature = f.read().strip()
-    nom = "%s_%s_x64-setup.exe" % (re.sub(r"[^A-Za-z0-9._-]+", "-", installeur["produit"]).strip("-") or "launcher", installeur["version"])
     actuel = lire_json(os.path.join(DONNEES, "update", "latest.json")) or {}
     plateforme = (actuel.get("platforms") or {}).get("windows-x86_64") or {}
     if actuel.get("version") == installeur["version"] and plateforme.get("signature") == signature \
             and os.path.isfile(os.path.join(DONNEES, "update", nom)):
-        return {"version": installeur["version"], "nom": nom, "a_publier": False}
+        return {"version": installeur["version"], "nom": nom, "a_publier": False, "signe": True}
     latest = {
         "version": installeur["version"],
         "notes": notes or "",
         "pub_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "platforms": {"windows-x86_64": {"signature": signature, "url": "%s/update/%s" % (URL_PUBLIQUE, urllib.parse.quote(nom))}},
     }
-    return {"version": installeur["version"], "nom": nom, "a_publier": True, "source": installeur["fichier"], "latest": latest}
+    return {"version": installeur["version"], "nom": nom, "a_publier": True, "source": installeur["fichier"], "latest": latest, "signe": True}
 
 
 def publier_launcher(maj):
     update = os.path.join(DONNEES, "update")
     copier_atomique(maj["source"], os.path.join(update, maj["nom"]))
     copier_atomique(maj["source"], os.path.join(update, INSTALLEUR_STABLE))
-    ecrire_atomique(json_texte(maj["latest"]), os.path.join(update, "latest.json"))
+    if maj["latest"]:
+        ecrire_atomique(json_texte(maj["latest"]), os.path.join(update, "latest.json"))
+    elif os.path.isfile(os.path.join(update, "latest.json")):
+        os.remove(os.path.join(update, "latest.json"))
     for nom in os.listdir(update):
         if SETUP.match(nom) and nom != maj["nom"]:
             os.remove(os.path.join(update, nom))
@@ -509,7 +519,7 @@ def publier_launcher(maj):
 
 # ---------- page d'accueil ----------
 
-def page_accueil(config, version, octets, tfar):
+def page_accueil(config, version, octets, tfar, signe=True):
     e = html.escape
     serveur = config.get("serveur", {})
     nom = e(serveur.get("nom", "Serveur"))
@@ -517,8 +527,8 @@ def page_accueil(config, version, octets, tfar):
     boutons = "\n".join('      <a class="lien" href="%s">%s</a>' % (e(l["url"], quote=True), e(l.get("nom", "Lien"))) for l in liens)
     if version:
         telecharger = ('      <a class="bouton" href="/update/%s">T&eacute;l&eacute;charger le launcher</a>\n'
-                       '      <span class="version">Windows 64 bits &middot; version %s &middot; mise &agrave; jour automatique</span>'
-                       % (INSTALLEUR_STABLE, e(version)))
+                       '      <span class="version">Windows 64 bits &middot; version %s%s</span>'
+                       % (INSTALLEUR_STABLE, e(version), " &middot; mise &agrave; jour automatique" if signe else ""))
     else:
         telecharger = '      <span class="version">Le launcher n\'est pas encore publi&eacute;.</span>'
     libelle = {"stable": " (version stable 0.9)", "beta": " (version 1.0 b&ecirc;ta)"}.get((tfar or {}).get("version"), "")
@@ -580,9 +590,10 @@ def main(argv):
         print("  plugin TFAR : aucun")
     print("  launcher.json : %s" % ("a ecrire" if launcher_change else "inchange"))
     if maj:
-        print("  launcher : version %s %s" % (maj["version"], "a publier" if maj["a_publier"] else "deja publiee"))
+        print("  launcher : version %s %s%s" % (maj["version"], "a publier" if maj["a_publier"] else "deja publiee",
+                                              "" if maj["signe"] else " (sans .sig : page de telechargement seulement, pas de mise a jour automatique)"))
     else:
-        print("  launcher : aucun installeur signe dans %s" % LAUNCHER_BUILD)
+        print("  launcher : aucun installeur *_x64-setup.exe dans %s" % LAUNCHER_BUILD)
     if args.a_sec:
         print("--a-sec : rien n'a ete ecrit.")
         return 0
@@ -607,8 +618,9 @@ def main(argv):
     if maj and maj["a_publier"]:
         publier_launcher(maj)
     latest = lire_json(os.path.join(DONNEES, "update", "latest.json")) or {}
-    version = latest.get("version") if os.path.isfile(os.path.join(DONNEES, "update", INSTALLEUR_STABLE)) else None
-    ecrire_atomique(page_accueil(publiee, version, total, tfar), os.path.join(DONNEES, "index.html"))
+    version = (maj["version"] if maj else latest.get("version")) if os.path.isfile(os.path.join(DONNEES, "update", INSTALLEUR_STABLE)) else None
+    signe = maj["signe"] if maj else bool(latest)
+    ecrire_atomique(page_accueil(publiee, version, total, tfar, signe), os.path.join(DONNEES, "index.html"))
     ecrire_atomique(json.dumps(nouveau_cache), CACHE)
     print("Termine.")
     return 0

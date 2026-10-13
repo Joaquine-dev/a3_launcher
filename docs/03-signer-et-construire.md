@@ -31,6 +31,18 @@ La commande demande un mot de passe (vous pouvez le laisser vide, voir plus bas)
 
 ## 3. Construire l'installeur
 
+### Le plus simple : `preparer.bat`
+
+Rangez la clé privée dans `cles/launcher.key` à la racine du dépôt (dossier ignoré par git ; ou indiquez son chemin dans la variable `TAURI_SIGNING_PRIVATE_KEY_PATH`, ou son contenu dans `TAURI_SIGNING_PRIVATE_KEY`). Le mot de passe, s'il y en a un, va dans `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` ; une clé sans mot de passe convient.
+
+```powershell
+cmd /c 'npx tauri signer generate --ci -p "" -w ..\cles\launcher.key'   # depuis launcher/, clé sans mot de passe
+```
+
+(`cmd /c` parce que Windows PowerShell 5.1 supprime l'argument vide `""`.) Puis double-cliquez sur `preparer.bat` : il construit l'installeur **sans** la signature intégrée de Tauri, puis le signe avec `tauri signer sign`, ce qui évite le blocage décrit plus bas. Sans clé, il avertit que la mise à jour automatique sera désactivée et continue.
+
+### À la main
+
 PowerShell, depuis `launcher/` :
 
 ```powershell

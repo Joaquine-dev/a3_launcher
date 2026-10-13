@@ -30,3 +30,8 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+
+# preparer.bat : dossier et archive a envoyer, cle privee locale
+a-envoyer/
+a-envoyer.zip
+cles/

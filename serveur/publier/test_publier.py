@@ -121,5 +121,45 @@ class Tfar(unittest.TestCase):
         self.assertIn("ne pourra pas verifier", sortie)
 
 
+class Installeur(unittest.TestCase):
+    def setUp(self):
+        self.dossier = tempfile.TemporaryDirectory()
+        self.build = os.path.join(self.dossier.name, "launcher-build")
+        self.donnees = os.path.join(self.dossier.name, "donnees")
+        os.makedirs(self.build)
+        self.anciens = publier.LAUNCHER_BUILD, publier.DONNEES, publier.URL_PUBLIQUE
+        publier.LAUNCHER_BUILD, publier.DONNEES, publier.URL_PUBLIQUE = self.build, self.donnees, "https://play.example.com"
+        self.exe = os.path.join(self.build, "Mon Launcher_0.2.0_x64-setup.exe")
+        with open(self.exe, "wb") as f:
+            f.write(b"MZ")
+
+    def tearDown(self):
+        publier.LAUNCHER_BUILD, publier.DONNEES, publier.URL_PUBLIQUE = self.anciens
+        self.dossier.cleanup()
+
+    def test_sans_signature_publie_le_telechargement_sans_latest(self):
+        os.makedirs(os.path.join(self.donnees, "update"))
+        with open(os.path.join(self.donnees, "update", "latest.json"), "w") as f:
+            f.write("{}")
+        maj = publier.preparer_launcher(publier.installeur_local(), "")
+        self.assertFalse(maj["signe"])
+        self.assertTrue(maj["a_publier"])
+        publier.publier_launcher(maj)
+        update = os.path.join(self.donnees, "update")
+        self.assertEqual(sorted(os.listdir(update)), ["Mon-Launcher_0.2.0_x64-setup.exe", publier.INSTALLEUR_STABLE])
+        self.assertFalse(publier.preparer_launcher(publier.installeur_local(), "")["a_publier"])
+
+    def test_signe_ecrit_latest(self):
+        with open(self.exe + ".sig", "w") as f:
+            f.write("signature")
+        maj = publier.preparer_launcher(publier.installeur_local(), "notes")
+        self.assertTrue(maj["signe"])
+        publier.publier_launcher(maj)
+        latest = publier.lire_json(os.path.join(self.donnees, "update", "latest.json"))
+        self.assertEqual(latest["version"], "0.2.0")
+        self.assertEqual(latest["platforms"]["windows-x86_64"]["signature"], "signature")
+        self.assertFalse(publier.preparer_launcher(publier.installeur_local(), "notes")["a_publier"])
+
+
 if __name__ == "__main__":
     unittest.main()

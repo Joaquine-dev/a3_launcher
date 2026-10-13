@@ -39,29 +39,25 @@ Côté serveur, **aucun code ne tourne** : nginx sert des fichiers statiques, et
 
 ## Démarrage rapide
 
-1. **Le serveur.** Sur un VPS avec Docker et un nom de domaine qui pointe dessus :
+Il faut un PC Windows (pour construire le launcher) et un VPS Linux avec Docker et un nom de domaine qui pointe dessus.
+
+1. **Sur le PC** : installez [Node.js](https://nodejs.org) (LTS) et [Rust](https://rustup.rs) avec les [prérequis Tauri](https://tauri.app/start/prerequisites/), puis éditez `launcher.config.json` : au minimum `nom`, `identifiant` et `urlServeur` (l'adresse de votre serveur, par exemple `https://play.mon-serveur.fr`), et si vous voulez `couleurs.accent`. Détails : [docs/02-personnaliser-le-launcher.md](docs/02-personnaliser-le-launcher.md).
+2. **Facultatif, pour la mise à jour automatique du launcher** : créez une clé de signature dans `cles/launcher.key` et collez la clé publique dans `clePubliqueMaj` ([docs/03-signer-et-construire.md](docs/03-signer-et-construire.md)). Sans clé, tout fonctionne, mais les joueurs devront retélécharger le launcher à chaque nouvelle version.
+3. **Double-cliquez sur `preparer.bat`.** Il vérifie les outils et la configuration, construit et signe l'installeur, puis assemble `a-envoyer/` et `a-envoyer.zip` : la partie serveur (Docker, nginx, outil `publier`), `.env` prérempli, `config/launcher.json`, un dossier `mods/` vide et l'installeur dans `launcher-build/`.
+4. **Sur le VPS** : envoyez le dossier (WinSCP ou `scp -r a-envoyer utilisateur@vps:arma-launcher`), puis suivez `a-envoyer/LISEZMOI.txt` :
    ```sh
-   git clone <ce dépôt> && cd <dépôt>/serveur
-   cp .env.exemple .env                                  # URL_PUBLIQUE, DOMAINE, EMAIL_ACME (garder HTTP_ECOUTE=127.0.0.1:8080)
-   cp config/launcher.exemple.json config/launcher.json  # nom, adresse, port, liens, news
-   docker compose --profile https up -d                  # nginx + HTTPS automatique (Caddy)
+   cd arma-launcher
+   nano .env                                  # EMAIL_ACME ; URL_PUBLIQUE et DOMAINE sont préremplis
+   nano config/launcher.json                  # nom, adresse et port de jeu, liens, news, tfar
+   # déposer les dossiers @Mod dans mods/
+   docker compose --profile https up -d       # nginx + HTTPS automatique (Caddy)
+   docker compose run --rm publier --a-sec    # simulation
+   docker compose run --rm publier            # publication
    ```
-   Détails : [docs/01-installer-le-serveur.md](docs/01-installer-le-serveur.md).
+   La page `https://votre-domaine/` propose alors le launcher en téléchargement. Détails : [docs/01-installer-le-serveur.md](docs/01-installer-le-serveur.md).
+5. **Ensuite** : de nouveaux mods, news ou liens se publient sur le VPS seul (`docker compose run --rm publier`) ; une nouvelle version du launcher demande de relancer `preparer.bat` et de renvoyer seulement `launcher-build/`. Voir [docs/04-publier-une-mise-a-jour.md](docs/04-publier-une-mise-a-jour.md).
 
-2. **Les mods.** Copiez vos dossiers `@Mod` dans `serveur/mods/`, puis :
-   ```sh
-   docker compose run --rm publier --a-sec   # simulation
-   docker compose run --rm publier           # publication
-   ```
-
-3. **Le launcher.** Sur un PC Windows avec Node.js 20+ et Rust : éditez `launcher.config.json` (nom, `urlServeur`, couleurs), remplacez les visuels de `launcher/public/` et `launcher/app-icon.png`.
-   Voir [docs/02-personnaliser-le-launcher.md](docs/02-personnaliser-le-launcher.md).
-
-4. **La clé de signature et l'installeur.** `npx tauri signer generate`, clé publique dans `launcher.config.json`, puis `npm run tauri build`.
-   Voir [docs/03-signer-et-construire.md](docs/03-signer-et-construire.md).
-
-5. **La publication.** Copiez l'installeur et son `.sig` dans `serveur/launcher-build/`, relancez `docker compose run --rm publier`. La page `https://votre-domaine/` propose alors le téléchargement, et les launchers déjà installés se mettent à jour.
-   Voir [docs/04-publier-une-mise-a-jour.md](docs/04-publier-une-mise-a-jour.md).
+Vous préférez tout faire à la main (cloner le dépôt sur le VPS, `npm run tauri build`) ? Les docs 01 à 04 décrivent chaque étape sans `preparer.bat`.
 
 ## Documentation
 
@@ -78,6 +74,7 @@ Côté serveur, **aucun code ne tourne** : nginx sert des fichiers statiques, et
 
 ```
 launcher.config.json     LE fichier à éditer pour personnaliser le launcher
+preparer.bat             construit le launcher et prépare a-envoyer/ (+ .zip) pour le VPS (outils/preparer.ps1)
 launcher/                application Tauri 2 (Rust + TypeScript/Vite)
   scripts/configurer.mjs   reporte launcher.config.json dans tauri.conf.json, package.json, Cargo.toml
   scripts/visuels.py       génère des visuels neutres (Pillow)

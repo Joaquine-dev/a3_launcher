@@ -7,6 +7,17 @@ docker compose run --rm publier --a-sec   # montre ce qui serait fait, n'écrit 
 docker compose run --rm publier           # publie
 ```
 
+## Que faut-il renvoyer depuis le PC ?
+
+| Ce qui change | Sur le PC | À envoyer sur le VPS | Sur le VPS |
+|---|---|---|---|
+| Mods (ajout, mise à jour, retrait) | rien | les dossiers `@Mod` dans `mods/` | `docker compose run --rm publier` |
+| News, liens, adresse du serveur de jeu, TFAR | rien | rien (éditez `config/launcher.json` sur le VPS) | `docker compose run --rm publier` |
+| Nouvelle version du launcher (code, couleurs, nom) | monter `version` dans `launcher.config.json`, `preparer.bat` | seulement le contenu de `a-envoyer/launcher-build/` (`.exe` et `.exe.sig`) dans `launcher-build/` | `docker compose run --rm publier --notes "…"` |
+| Mise à jour de l'outil `publier`, de nginx ou de `docker-compose.yml` (nouvelle version de ce dépôt) | `preparer.bat` | `docker-compose.yml`, `nginx/`, `publier/`, `https/` (pas `.env`, `config/`, `mods/`, `donnees/`) | `docker compose up -d`, puis `publier` |
+
+`preparer.bat` reprend `serveur/.env` et `serveur/config/launcher.json` s'ils existent sur le PC ; sinon il les crée depuis les exemples. Ne renvoyez pas ces deux fichiers par-dessus ceux du VPS si vous les y avez modifiés.
+
 L'outil `publier` compare ce que vous avez déposé (`mods/`, `config/launcher.json`, `launcher-build/`) avec ce qui est en ligne (`donnees/`) et ne copie que ce qui a changé. Il regénère à chaque fois la page d'accueil `index.html`. Lancer la commande deux fois de suite ne fait rien la seconde fois.
 
 ## Mods : ajouter, mettre à jour, retirer
@@ -88,8 +99,8 @@ Les anciennes configurations sans bloc `tfar` restent acceptées : un `.ts3_plug
 
 ## Nouvelle version du launcher
 
-1. Sur le PC Windows : montez `"version"` dans `launcher.config.json`, puis `npm run tauri build` (voir [03-signer-et-construire.md](03-signer-et-construire.md)).
-2. Copiez **les deux fichiers** `…_x64-setup.exe` et `…_x64-setup.exe.sig` de `launcher/src-tauri/target/release/bundle/nsis/` dans `serveur/launcher-build/` sur le VPS :
+1. Sur le PC Windows : montez `"version"` dans `launcher.config.json`, puis double-cliquez sur `preparer.bat` (ou `npm run tauri build`, voir [03-signer-et-construire.md](03-signer-et-construire.md)).
+2. Copiez **les deux fichiers** `…_x64-setup.exe` et `…_x64-setup.exe.sig` (dans `a-envoyer/launcher-build/`, ou `launcher/src-tauri/target/release/bundle/nsis/`) dans `launcher-build/` sur le VPS :
    ```powershell
    scp "launcher\src-tauri\target\release\bundle\nsis\Arma Launcher_0.1.1_x64-setup.exe*" user@vps:arma-launcher/serveur/launcher-build/
    ```
@@ -98,11 +109,13 @@ Les anciennes configurations sans bloc `tfar` restent acceptées : un `.ts3_plug
    docker compose run --rm publier --notes "Corrections diverses"
    ```
 
-`publier` prend dans `launcher-build/` l'installeur signé de **plus haute version**, le copie dans `donnees/update/` sous deux noms (`<nom>_<version>_x64-setup.exe` pour la mise à jour automatique, `launcher-setup.exe` pour le bouton de la page d'accueil), supprime l'installeur de la version précédente et écrit `update/latest.json`. `URL_PUBLIQUE` (fichier `.env`) doit être renseignée : l'adresse de l'installeur y est absolue.
+`publier` prend dans `launcher-build/` l'installeur de **plus haute version**, le copie dans `donnees/update/` sous deux noms (`<nom>_<version>_x64-setup.exe` pour la mise à jour automatique, `launcher-setup.exe` pour le bouton de la page d'accueil), supprime l'installeur de la version précédente et écrit `update/latest.json`. `URL_PUBLIQUE` (fichier `.env`) doit être renseignée : l'adresse de l'installeur y est absolue.
 
 Au prochain démarrage, les launchers installés proposent « Mise à jour du launcher : la version X est disponible ».
 
 Les anciens installeurs peuvent rester dans `launcher-build/` : seul le plus récent est publié.
+
+**Installeur sans `.sig`** (construit sans clé) : `publier` le met quand même en téléchargement sur la page d'accueil, mais n'écrit pas `update/latest.json` (et retire celui qui existait) : aucun launcher installé ne se met à jour, les joueurs doivent retélécharger l'installeur.
 
 ## Automatiser depuis votre PC (exemple)
 
