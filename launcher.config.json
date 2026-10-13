@@ -8,12 +8,13 @@
   "userAgent": "Arma-Launcher",
   "editeur": "",
   "devise": "Un serveur, mille histoires…",
+  "imageFond": "fond.webp",
   "couleurs": {
-    "fond": "#141618",
-    "surface": "#1c1f22",
-    "relief": "#262a2e",
-    "texte": "#e4e2da",
-    "accent": "#8a9a5b",
-    "alerte": "#d4a849"
+    "fond": "#0b0d14",
+    "surface": "#141824",
+    "relief": "#1e2330",
+    "texte": "#f4efe6",
+    "accent": "#ffb547",
+    "alerte": "#ffd166"
   }
 }

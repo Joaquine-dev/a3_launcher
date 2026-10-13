@@ -5,113 +5,93 @@
     <title>%NOM_LAUNCHER%</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
-  <body>
-    <aside class="barre">
-      <div class="marque" data-tauri-drag-region="deep">
+  <body class="sur-accueil">
+    <div class="scene" aria-hidden="true"></div>
+
+    <header class="titre-fenetre" data-tauri-drag-region="deep">
+      <div class="marque">
         <img src="/logo.png" alt="" />
-        <span class="marque-texte">
-          <b id="titre-nom">%NOM_LAUNCHER%</b>
-          <span id="titre-version" class="donnee"></span>
-        </span>
+        <b id="titre-nom">%NOM_LAUNCHER%</b>
+        <span id="titre-version" class="version"></span>
       </div>
 
       <nav class="navigation" aria-label="Sections">
-        <button class="nav" data-vue="accueil" aria-current="page">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>Jouer
-        </button>
-        <button class="nav" data-vue="news">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Actualités<span id="nb-news" class="compteur donnee" hidden></span>
-        </button>
-        <button class="nav" data-vue="liens">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14l4-4M8.5 11.5l-2 2a3.5 3.5 0 0 0 5 5l2-2M15.5 12.5l2-2a3.5 3.5 0 0 0-5-5l-2 2"/></svg>Liens
-        </button>
-        <button class="nav" data-vue="parametres" id="ouvrir-parametres">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Paramètres
-        </button>
+        <button class="nav" data-vue="accueil" aria-current="page">Jouer</button>
+        <button class="nav" data-vue="news">Actualités<span id="nb-news" class="compteur" hidden></span></button>
+        <button class="nav" data-vue="liens">Liens</button>
       </nav>
 
-      <div class="releve" aria-live="polite">
-        <p class="etiquette">Serveur de jeu</p>
-        <p class="releve-ligne"><span id="pastille" class="pastille"></span><span id="etat-serveur">Interrogation…</span></p>
-        <p class="releve-ligne donnee" id="mini-joueurs"></p>
-      </div>
-    </aside>
+      <span class="vide-bandeau"></span>
 
-    <div class="colonne">
-      <header class="bandeau" data-tauri-drag-region="deep">
-        <span class="etiquette" id="titre-vue">Jouer</span>
-        <span class="vide-bandeau"></span>
+      <div class="commandes">
+        <button class="nav reglages" data-vue="parametres" id="ouvrir-parametres" aria-label="Paramètres" title="Paramètres">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+        </button>
+        <span class="separateur" aria-hidden="true"></span>
         <button id="reduire" class="fenetre" aria-label="Réduire">
           <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5h10" stroke="currentColor" stroke-width="1.2" /></svg>
         </button>
         <button id="fermer" class="fenetre fermer" aria-label="Fermer">
           <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1.2" /></svg>
         </button>
-      </header>
-
-      <div class="avis">
-        <div id="hors-ligne" class="avis-ligne" hidden>
-          <span>Hors ligne : le serveur de mise à jour ne répond pas.</span>
-        </div>
-        <div id="bandeau-teamspeak" class="avis-ligne" hidden>
-          <span>TeamSpeak 3 n'est pas installé : la voix et la radio passent par lui (TeamSpeak 5 et 6 ne gèrent pas le plugin radio).</span>
-          <button id="installer-teamspeak" class="secondaire">Télécharger</button>
-        </div>
-        <div id="bandeau-tfar" class="avis-ligne" hidden>
-          <span id="texte-tfar">Le plugin TeamSpeak TFAR manque : pas de voix ni de radio en jeu.</span>
-          <button id="installer-tfar" class="secondaire">Installer</button>
-        </div>
-        <div id="erreur" class="avis-ligne erreur" hidden></div>
       </div>
+    </header>
 
-      <main class="vues">
-        <section class="vue accueil" data-panneau="accueil">
-          <div class="titre-serveur">
-            <h1 id="serveur-nom">%NOM_LAUNCHER%</h1>
-            <p class="devise">%DEVISE%</p>
+    <div class="avis">
+      <div id="hors-ligne" class="avis-ligne" hidden>
+        <span>Hors ligne : le serveur de mise à jour ne répond pas.</span>
+      </div>
+      <div id="bandeau-teamspeak" class="avis-ligne" hidden>
+        <span>TeamSpeak 3 n'est pas installé : la voix et la radio passent par lui (TeamSpeak 5 et 6 ne gèrent pas le plugin radio).</span>
+        <button id="installer-teamspeak">Télécharger</button>
+      </div>
+      <div id="bandeau-tfar" class="avis-ligne" hidden>
+        <span id="texte-tfar">Le plugin TeamSpeak TFAR manque : pas de voix ni de radio en jeu.</span>
+        <button id="installer-tfar">Installer</button>
+      </div>
+      <div id="erreur" class="avis-ligne erreur" hidden></div>
+    </div>
+
+    <main class="vues">
+      <section class="vue accueil" data-panneau="accueil">
+        <p class="surtitre">
+          <span id="etat-serveur" class="etat-serveur"><span id="pastille" class="pastille"></span><span id="texte-etat">Interrogation…</span></span>
+          <span id="adresse"></span>
+          <span id="nb-mods"></span>
+        </p>
+        <h1 id="serveur-nom" class="titre-serveur">%NOM_LAUNCHER%</h1>
+        <p class="devise">%DEVISE%</p>
+
+        <dl class="releves">
+          <div class="releve">
+            <dt>Joueurs</dt>
+            <dd><span id="joueurs" class="squelette"></span><small id="joueurs-max"></small></dd>
+            <div class="remplissage" aria-hidden="true"><i id="remplissage"></i></div>
           </div>
+          <div class="releve"><dt>Ping</dt><dd><span id="ping">—</span><small id="ping-unite"></small></dd></div>
+          <div class="releve"><dt>Carte</dt><dd id="carte">—</dd></div>
+          <div class="releve" id="ligne-reboot" hidden><dt>Redémarrage</dt><dd><span id="reboot"></span><small id="reboot-dans"></small></dd></div>
+        </dl>
 
-          <div class="grille-accueil">
-            <section class="carte statut" aria-labelledby="titre-statut">
-              <h2 id="titre-statut" class="etiquette">État du serveur</h2>
-              <div class="effectif">
-                <p class="compte donnee"><span id="joueurs" class="squelette"></span><span class="total" id="joueurs-max"></span></p>
-                <p class="sous" id="sous-compte">joueurs connectés</p>
-              </div>
-              <dl class="fiche">
-                <div><dt>Carte</dt><dd id="carte" class="donnee">—</dd></div>
-                <div><dt>Adresse</dt><dd id="adresse" class="donnee">—</dd></div>
-                <div><dt>Mods</dt><dd id="nb-mods" class="donnee">—</dd></div>
-                <div id="ligne-reboot" hidden><dt>Redémarrage</dt><dd id="reboot" class="donnee"></dd></div>
-              </dl>
-            </section>
+        <div id="bloc-raccourcis" class="rejoindre"><div id="liens-courts" class="liens-courts"></div></div>
+      </section>
 
-            <div class="pile">
-              <section class="carte une" aria-labelledby="titre-une">
-                <h2 id="titre-une" class="etiquette">Dernière actualité</h2>
-                <div id="news-une"></div>
-                <button id="voir-news" class="tertiaire" hidden>Toutes les actualités</button>
-              </section>
-              <section class="carte raccourcis" aria-labelledby="titre-raccourcis" id="bloc-raccourcis">
-                <h2 id="titre-raccourcis" class="etiquette">Rejoindre</h2>
-                <div id="liens-courts" class="liens-courts"></div>
-              </section>
-            </div>
-          </div>
-        </section>
+      <section class="vue" data-panneau="news" hidden>
+        <h2 class="titre-vue">Actualités</h2>
+        <div id="news" class="cartes-news"></div>
+      </section>
 
-        <section class="vue" data-panneau="news" hidden>
-          <div id="news" class="cartes-news"></div>
-        </section>
+      <section class="vue" data-panneau="liens" hidden>
+        <h2 class="titre-vue">Liens</h2>
+        <div id="liens" class="cartes-liens"></div>
+      </section>
 
-        <section class="vue" data-panneau="liens" hidden>
-          <div id="liens" class="cartes-liens"></div>
-        </section>
-
-        <section class="vue parametres" data-panneau="parametres" hidden>
+      <section class="vue parametres" data-panneau="parametres" hidden>
+        <h2 class="titre-vue">Paramètres</h2>
+        <div class="panneau">
           <div class="formulaire">
             <section class="groupe">
-              <h2 class="etiquette">Dossiers</h2>
+              <h3 class="etiquette">Dossiers</h3>
               <label>Arma 3
                 <span class="champ"><input id="p-arma" type="text" spellcheck="false" placeholder="C:\Program Files (x86)\Steam\steamapps\common\Arma 3" /><button id="choisir-arma" class="secondaire">Parcourir</button></span>
                 <em>Le dossier qui contient Arma3_x64.exe.</em>
@@ -123,7 +103,7 @@
             </section>
 
             <section class="groupe">
-              <h2 class="etiquette">Lancement</h2>
+              <h3 class="etiquette">Lancement</h3>
               <label>Après le lancement du jeu
                 <select id="p-apres">
                   <option value="reduire">Réduire dans la zone de notification</option>
@@ -140,7 +120,7 @@
 
           <footer class="formulaire-pied">
             <p id="p-erreur" class="erreur-formulaire" hidden></p>
-            <p id="p-etat" class="etat-formulaire donnee" hidden></p>
+            <p id="p-etat" class="etat-formulaire" hidden></p>
             <div class="actions">
               <button id="integrite" class="tertiaire" title="Recalcule chaque fichier des mods : plus long qu'une vérification normale. Utile si le jeu plante au chargement.">Revérifier tous les fichiers</button>
               <span class="espace"></span>
@@ -148,24 +128,30 @@
               <button id="enregistrer" class="valider">Enregistrer</button>
             </div>
           </footer>
-        </section>
-      </main>
-
-      <footer class="action">
-        <div class="action-texte">
-          <p id="etat-mods">Connexion au serveur de mise à jour…</p>
-          <p id="detail" class="detail donnee"></p>
-          <div id="piste" class="piste" aria-hidden="true" hidden><div id="jauge" class="jauge"></div></div>
         </div>
-        <p id="pourcent" class="pourcent donnee" hidden></p>
-        <button id="forcer" class="tertiaire" hidden>Lancer quand même</button>
+      </section>
+    </main>
+
+    <footer class="pied">
+      <section class="actus-accueil" aria-labelledby="titre-actus">
+        <div class="actus-tete">
+          <h2 id="titre-actus" class="etiquette">Actualités</h2>
+          <button id="voir-news" class="tertiaire" hidden>Tout voir</button>
+        </div>
+        <div id="news-une" class="vignettes"></div>
+      </section>
+
+      <section class="lancement">
+        <p class="ligne-etat"><span id="etat-mods">Connexion au serveur de mise à jour…</span><span id="pourcent" class="pourcent" hidden></span></p>
+        <div id="piste" class="piste" aria-hidden="true"><div id="jauge" class="jauge"></div></div>
         <button id="principal" class="principal attente" disabled>Chargement…</button>
-      </footer>
-    </div>
+        <p class="ligne-detail"><span id="detail" class="detail"></span><button id="forcer" class="tertiaire" hidden>Lancer quand même</button></p>
+      </section>
+    </footer>
 
     <dialog id="maj">
       <h2 class="titre-dialogue">Mise à jour du launcher</h2>
-      <p class="texte-dialogue">La version <strong id="maj-version" class="donnee"></strong> est disponible.</p>
+      <p class="texte-dialogue">La version <strong id="maj-version"></strong> est disponible.</p>
       <p id="maj-etat" class="texte-dialogue detail"></p>
       <div class="actions">
         <span class="espace"></span>

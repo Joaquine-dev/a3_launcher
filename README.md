@@ -10,7 +10,7 @@ Le joueur installe le launcher une fois. Ensuite, à chaque ouverture, il :
 - vérifie et propose le plugin TeamSpeak TFAR, version stable 0.9 ou bêta 1.0 (option à activer côté serveur) ;
 - se met à jour tout seul quand vous publiez une nouvelle version.
 
-![Le launcher : état du serveur, dernière actualité, liens et bouton JOUER](docs/captures/accueil.png)
+![Le launcher : image d'ambiance, état du serveur (joueurs, ping, carte), actualités en vignettes et bouton JOUER](docs/captures/accueil.png)
 
 | Synchronisation des mods | Actualités | Page de téléchargement |
 |---|---|---|
@@ -41,7 +41,7 @@ Côté serveur, **aucun code ne tourne** : nginx sert des fichiers statiques, et
 
 Il faut un PC Windows (pour construire le launcher) et un VPS Linux avec Docker et un nom de domaine qui pointe dessus.
 
-1. **Sur le PC** : installez [Node.js](https://nodejs.org) (LTS) et [Rust](https://rustup.rs) avec les [prérequis Tauri](https://tauri.app/start/prerequisites/), puis éditez `launcher.config.json` : au minimum `nom`, `identifiant` et `urlServeur` (l'adresse de votre serveur, par exemple `https://play.mon-serveur.fr`), et si vous voulez `couleurs.accent`. Détails : [docs/02-personnaliser-le-launcher.md](docs/02-personnaliser-le-launcher.md).
+1. **Sur le PC** : installez [Node.js](https://nodejs.org) (LTS) et [Rust](https://rustup.rs) avec les [prérequis Tauri](https://tauri.app/start/prerequisites/), puis éditez `launcher.config.json` : au minimum `nom`, `identifiant` et `urlServeur` (l'adresse de votre serveur, par exemple `https://play.mon-serveur.fr`), et si vous voulez `couleurs.accent` et `imageFond` (image de fond). Détails : [docs/02-personnaliser-le-launcher.md](docs/02-personnaliser-le-launcher.md).
 2. **Facultatif, pour la mise à jour automatique du launcher** : créez une clé de signature dans `cles/launcher.key` et collez la clé publique dans `clePubliqueMaj` ([docs/03-signer-et-construire.md](docs/03-signer-et-construire.md)). Sans clé, tout fonctionne, mais les joueurs devront retélécharger le launcher à chaque nouvelle version.
 3. **Double-cliquez sur `preparer.bat`.** Il vérifie les outils et la configuration, construit et signe l'installeur, puis assemble `a-envoyer/` et `a-envoyer.zip` : la partie serveur (Docker, nginx, outil `publier`), `.env` prérempli, `config/launcher.json`, un dossier `mods/` vide et l'installeur dans `launcher-build/`.
 4. **Sur le VPS** : envoyez le dossier (WinSCP ou `scp -r a-envoyer utilisateur@vps:arma-launcher`), puis suivez `a-envoyer/LISEZMOI.txt` :
@@ -64,7 +64,7 @@ Vous préférez tout faire à la main (cloner le dépôt sur le VPS, `npm run ta
 | Fichier | Contenu |
 |---|---|
 | [01-installer-le-serveur.md](docs/01-installer-le-serveur.md) | VPS, Docker, DNS, HTTPS (profil Caddy, reverse proxy existant, certbot) |
-| [02-personnaliser-le-launcher.md](docs/02-personnaliser-le-launcher.md) | `launcher.config.json`, logo, icônes, couleurs |
+| [02-personnaliser-le-launcher.md](docs/02-personnaliser-le-launcher.md) | `launcher.config.json`, logo, icônes, image de fond, couleurs |
 | [03-signer-et-construire.md](docs/03-signer-et-construire.md) | Clé de mise à jour, construction, signature manuelle |
 | [04-publier-une-mise-a-jour.md](docs/04-publier-une-mise-a-jour.md) | Mods, news, nouvelle version du launcher |
 | [05-format-des-fichiers.md](docs/05-format-des-fichiers.md) | `launcher.json`, `manifest.json`, `latest.json`, règles de validation |

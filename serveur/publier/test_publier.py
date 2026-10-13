@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tests de l'option TFAR de publier.py (detection du .ts3_plugin, version, empreinte de la DLL).
+"""Tests de publier.py : option TFAR (detection du .ts3_plugin, version, empreinte de la DLL), installeur, image de la page.
 
     python -m unittest discover -s serveur/publier -v
 """
@@ -159,6 +159,48 @@ class Installeur(unittest.TestCase):
         self.assertEqual(latest["version"], "0.2.0")
         self.assertEqual(latest["platforms"]["windows-x86_64"]["signature"], "signature")
         self.assertFalse(publier.preparer_launcher(publier.installeur_local(), "notes")["a_publier"])
+
+
+class FondDePage(unittest.TestCase):
+    def setUp(self):
+        self.dossier = tempfile.TemporaryDirectory()
+        self.config = os.path.join(self.dossier.name, "config")
+        self.donnees = os.path.join(self.dossier.name, "donnees")
+        os.makedirs(self.config)
+        os.makedirs(self.donnees)
+        self.anciens = publier.CONFIG, publier.DONNEES
+        publier.CONFIG, publier.DONNEES = self.config, self.donnees
+
+    def tearDown(self):
+        publier.CONFIG, publier.DONNEES = self.anciens
+        self.dossier.cleanup()
+
+    def page(self, fond):
+        config = {"serveur": {"nom": "Mon Serveur", "hote": "play.example.com", "port": 2302}, "liens": []}
+        return publier.page_accueil(config, "0.2.0", 1024, None, True, fond)
+
+    def test_sans_image_degrade_seul(self):
+        self.assertIsNone(publier.trouver_fond())
+        self.assertIsNone(publier.publier_fond(None))
+        page = self.page(None)
+        self.assertNotIn("url(", page)
+        self.assertIn("radial-gradient", page)
+
+    def test_image_publiee_et_citee_par_la_page(self):
+        with open(os.path.join(self.config, "fond.webp"), "wb") as f:
+            f.write(b"RIFF")
+        with open(os.path.join(self.donnees, "fond.jpg"), "wb") as f:
+            f.write(b"ancienne")
+        nom = publier.publier_fond(publier.trouver_fond())
+        self.assertEqual(nom, "fond.webp")
+        self.assertEqual(sorted(os.listdir(self.donnees)), ["fond.webp"])
+        self.assertIn('url("/fond.webp")', self.page(nom))
+
+    def test_image_retiree_quand_elle_disparait_de_config(self):
+        with open(os.path.join(self.donnees, "fond.png"), "wb") as f:
+            f.write(b"png")
+        self.assertIsNone(publier.publier_fond(publier.trouver_fond()))
+        self.assertEqual(os.listdir(self.donnees), [])
 
 
 if __name__ == "__main__":

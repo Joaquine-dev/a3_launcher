@@ -1,5 +1,5 @@
 use serde::Serialize;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::net::UdpSocket;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -8,6 +8,7 @@ pub struct InfoServeur {
     pub carte: String,
     pub joueurs: u8,
     pub max: u8,
+    pub ping: u32,
 }
 
 #[derive(Debug, PartialEq)]
@@ -47,7 +48,7 @@ pub fn decoder(octets: &[u8]) -> Result<Reponse, String> {
             position += 2;
             let joueurs = *octets.get(position).ok_or("A2S : paquet tronque")?;
             let max = *octets.get(position + 1).ok_or("A2S : paquet tronque")?;
-            Ok(Reponse::Info(InfoServeur { nom, carte, joueurs, max }))
+            Ok(Reponse::Info(InfoServeur { nom, carte, joueurs, max, ping: 0 }))
         }
         autre => Err(format!("A2S : type inattendu 0x{autre:02X}")),
     }
@@ -58,12 +59,14 @@ pub async fn interroger(hote: &str, port_query: u16, delai: Duration) -> Option<
     socket.connect((hote, port_query)).await.ok()?;
     let mut challenge = None;
     for _ in 0..3 {
+        let envoi = Instant::now();
         socket.send(&requete(challenge)).await.ok()?;
         let mut tampon = [0u8; 1400];
         let n = tokio::time::timeout(delai, socket.recv(&mut tampon)).await.ok()?.ok()?;
+        let aller_retour = envoi.elapsed().as_millis().min(u32::MAX as u128) as u32;
         match decoder(&tampon[..n]).ok()? {
             Reponse::Challenge(c) => challenge = Some(c),
-            Reponse::Info(info) => return Some(info),
+            Reponse::Info(info) => return Some(InfoServeur { ping: aller_retour, ..info }),
         }
     }
     None
@@ -97,7 +100,7 @@ mod tests {
         assert_eq!(decoder(&[0xFF, 0xFF, 0xFF, 0xFF, 0x41, 9, 8, 7, 6]).unwrap(), Reponse::Challenge([9, 8, 7, 6]));
         assert_eq!(
             decoder(&reponse_info()).unwrap(),
-            Reponse::Info(InfoServeur { nom: "Mon Serveur".into(), carte: "Stratis".into(), joueurs: 12, max: 32 })
+            Reponse::Info(InfoServeur { nom: "Mon Serveur".into(), carte: "Stratis".into(), joueurs: 12, max: 32, ping: 0 })
         );
     }
 

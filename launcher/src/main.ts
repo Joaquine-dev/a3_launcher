@@ -21,7 +21,7 @@ type Launcher = {
 };
 type Accueil = { reglages: Reglages; launcher: Launcher | null; hors_ligne: boolean; erreur: string | null; arma_detecte: boolean };
 type Resume = { fichiers: number; octets: number; a_supprimer: number; pret: boolean; hors_ligne: boolean; espace_manquant: number };
-type Info = { nom: string; carte: string; joueurs: number; max: number };
+type Info = { nom: string; carte: string; joueurs: number; max: number; ping: number };
 type Garde = { raison: "libre" } | { raison: "redemarrage"; secondes: number } | { raison: "hors_ligne" };
 type Veille = { info: Info | null; garde: Garde; reboot_dans: number | null };
 type Controles = { teamspeak: boolean; tfar: "absent" | "perime" | "ok" };
@@ -87,8 +87,8 @@ function afficherReboot() {
   ligne.hidden = !reboot;
   if (!reboot) return;
   const reste = Math.max(0, reboot.secondes - (performance.now() - reboot.lu) / 1000);
-  const heure = new Date(Date.now() + reste * 1000).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  el("reboot").textContent = `${heure} · dans ${duree(reste)}`;
+  el("reboot").textContent = new Date(Date.now() + reste * 1000).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  el("reboot-dans").textContent = `dans ${duree(reste)}`;
 }
 
 const TELECHARGER_TEAMSPEAK = "https://files.teamspeak-services.com/releases/client/3.6.2/TeamSpeak3-Client-win64-3.6.2.exe";
@@ -105,7 +105,7 @@ function rebours(): string {
 
 function taille(n: number): string {
   if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} Ko`;
-  if (n < 1024 ** 3) return `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} Mo`;
+  if (n < 1024 ** 3) return `${(n / 1024 / 1024).toFixed(n < 100 * 1024 * 1024 ? 1 : 0).replace(".", ",")} Mo`;
   return `${(n / 1024 ** 3).toFixed(2).replace(".", ",")} Go`;
 }
 
@@ -118,7 +118,7 @@ function erreur(message: string | null) {
 function jauge(pourcent: number | null, balaye = false) {
   const barre = el("jauge");
   barre.className = `jauge${balaye ? " balaye" : ""}`;
-  el("piste").hidden = pourcent === null && !balaye;
+  el("piste").classList.toggle("cachee", pourcent === null && !balaye);
   barre.style.width = balaye ? "30%" : `${(pourcent ?? 0).toFixed(1)}%`;
   const compteur = el("pourcent");
   compteur.hidden = pourcent === null;
@@ -146,6 +146,12 @@ function boutonLienNews(lien: Lien): HTMLButtonElement {
   return bouton;
 }
 
+function dateCourte(date: string): string {
+  const [a, m, j] = date.split("-").map(Number);
+  const d = new Date(a, m - 1, j);
+  return isNaN(d.getTime()) ? date : d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+}
+
 function rendreNews(news: News[]) {
   const zone = el("news");
   const une = el("news-une");
@@ -154,8 +160,7 @@ function rendreNews(news: News[]) {
   const triee = [...news].sort((a, b) => b.date.localeCompare(a.date));
   el("nb-news").hidden = !triee.length;
   el("nb-news").textContent = String(triee.length);
-  el("voir-news").hidden = triee.length < 2;
-  el("voir-news").textContent = `Toutes les actualités (${triee.length})`;
+  el("voir-news").hidden = !triee.length;
   if (!triee.length) {
     zone.append(texteVide("Aucune actualité pour le moment."));
     une.append(texteVide("Aucune actualité pour le moment."));
@@ -163,13 +168,12 @@ function rendreNews(news: News[]) {
   }
   triee.forEach((n, i) => {
     const carte = document.createElement("article");
-    carte.className = "carte news-carte";
+    carte.className = "news-carte";
     carte.style.animationDelay = `${Math.min(i, 6) * 40}ms`;
     const tete = document.createElement("header");
     const date = document.createElement("time");
-    date.className = "donnee";
     date.dateTime = n.date;
-    date.textContent = n.date;
+    date.textContent = dateCourte(n.date);
     tete.append(date);
     if (i === 0 && recente(n)) {
       carte.classList.add("recente");
@@ -186,18 +190,20 @@ function rendreNews(news: News[]) {
     if (n.lien) carte.append(boutonLienNews(n.lien));
     zone.append(carte);
   });
-  const n = triee[0];
-  const date = document.createElement("time");
-  date.className = "donnee";
-  date.dateTime = n.date;
-  date.textContent = n.date + (recente(n) ? " · nouveau" : "");
-  const titre = document.createElement("h3");
-  titre.textContent = n.titre;
-  const texte = document.createElement("p");
-  texte.className = "texte";
-  texte.textContent = n.texte;
-  une.append(date, titre, texte);
-  if (n.lien) une.append(boutonLienNews(n.lien));
+  for (const n of triee.slice(0, 3)) {
+    const vignette = document.createElement("button");
+    vignette.className = "vignette";
+    const date = document.createElement("time");
+    date.dateTime = n.date;
+    date.textContent = dateCourte(n.date) + (n === triee[0] && recente(n) ? " · nouveau" : "");
+    const titre = document.createElement("h3");
+    titre.textContent = n.titre;
+    const texte = document.createElement("p");
+    texte.textContent = n.texte;
+    vignette.append(date, titre, texte);
+    vignette.onclick = () => montrer("news");
+    une.append(vignette);
+  }
 }
 
 function rendreLiens(liens: Lien[]) {
@@ -234,22 +240,55 @@ function rendreLiens(liens: Lien[]) {
 type Vue = "accueil" | "news" | "liens" | "parametres";
 const TITRES_VUES: Record<Vue, string> = { accueil: "Jouer", news: "Actualités", liens: "Liens", parametres: "Paramètres" };
 
+function titreServeur(nom: string) {
+  const titre = el("serveur-nom");
+  const mots = nom.trim().split(/\s+/).filter(Boolean);
+  const coupe = Math.ceil(mots.length / 2);
+  const parties = mots.length > 1 ? [mots.slice(0, coupe), mots.slice(coupe)] : [mots];
+  titre.replaceChildren(
+    ...parties.map((p, i) => {
+      const span = document.createElement("span");
+      span.className = i ? "creux" : "plein";
+      span.textContent = p.join(" ");
+      return span;
+    }),
+  );
+  ajusterTitre();
+}
+
+function ajusterTitre() {
+  const titre = el("serveur-nom");
+  const vue = titre.closest<HTMLElement>(".vue");
+  if (!vue || vue.hidden) return;
+  titre.classList.remove("coupe");
+  let taille = 104;
+  const deborde = () => vue.scrollHeight > vue.clientHeight + 1 || titre.scrollWidth > titre.clientWidth + 1;
+  titre.style.fontSize = `${taille}px`;
+  while (taille > 40 && deborde()) {
+    taille -= 4;
+    titre.style.fontSize = `${taille}px`;
+  }
+  if (deborde()) titre.classList.add("coupe");
+}
+
 function montrer(vue: Vue) {
   document.querySelectorAll<HTMLElement>("[data-panneau]").forEach((p) => (p.hidden = p.dataset.panneau !== vue));
   document.querySelectorAll<HTMLButtonElement>(".nav").forEach((b) => {
     if (b.dataset.vue === vue) b.setAttribute("aria-current", "page");
     else b.removeAttribute("aria-current");
   });
-  el("titre-vue").textContent = TITRES_VUES[vue];
+  document.body.classList.toggle("sur-accueil", vue === "accueil");
+  document.title = vue === "accueil" ? __NOM_LAUNCHER__ : `${__NOM_LAUNCHER__} · ${TITRES_VUES[vue]}`;
+  if (vue === "accueil") ajusterTitre();
 }
 
 function rendre() {
   const l = accueil.launcher;
   el("titre-nom").textContent = __NOM_LAUNCHER__;
-  el("serveur-nom").textContent = l?.serveur.nom ?? __NOM_LAUNCHER__;
+  titreServeur(l?.serveur.nom || __NOM_LAUNCHER__);
   el("ligne-teamspeak").hidden = !utiliseTeamspeak();
-  el("adresse").textContent = l ? `${l.serveur.hote}:${l.serveur.port}` : "—";
-  el("nb-mods").textContent = l ? `${l.mods.length}` : "—";
+  el("adresse").textContent = l ? `${l.serveur.hote}:${l.serveur.port}` : "";
+  el("nb-mods").textContent = l ? `${l.mods.length} mod${l.mods.length > 1 ? "s" : ""}` : "";
   el("hors-ligne").hidden = !accueil.hors_ligne;
   rendreNews(l?.news ?? []);
   rendreLiens(l?.liens ?? []);
@@ -386,14 +425,16 @@ async function statut() {
   prochaineVeille = gardeLue + (retenu() ? 10000 : 30000);
   if (!occupe) majBouton();
   if (etaitRetenu && !retenu() && arme && resume?.pret) principal();
-  el("pastille").className = `pastille ${info ? "en-ligne" : "hors-ligne"}`;
-  el("etat-serveur").textContent = info ? "En ligne" : "Serveur hors ligne";
+  el("etat-serveur").className = `etat-serveur ${info ? "en-ligne" : "hors-ligne"}`;
+  el("texte-etat").textContent = info ? "En ligne" : "Serveur hors ligne";
   el("joueurs").classList.remove("squelette");
   el("joueurs").textContent = info ? String(info.joueurs) : "—";
-  el("joueurs-max").textContent = info ? `/${info.max}` : "";
-  el("sous-compte").textContent = info ? "joueurs connectés" : "aucune réponse du serveur";
-  el("mini-joueurs").textContent = info ? `${info.joueurs}/${info.max} joueurs` : "";
-  if (info) el("carte").textContent = info.carte || "—";
+  el("joueurs-max").textContent = info ? `/ ${info.max}` : "";
+  el("remplissage").style.width = info && info.max ? `${Math.min(100, (info.joueurs / info.max) * 100)}%` : "0";
+  el("ping").textContent = info ? String(info.ping) : "—";
+  el("ping-unite").textContent = info ? "ms" : "";
+  el("carte").textContent = info?.carte || "—";
+  ajusterTitre();
 }
 
 function utiliseTeamspeak(): boolean {
@@ -537,6 +578,8 @@ listen<Progression>("progression", ({ payload }) => {
 
 echelle();
 window.addEventListener("resize", echelle);
+new ResizeObserver(ajusterTitre).observe(document.querySelector(".avis")!);
+document.fonts.ready.then(ajusterTitre);
 
 el("reduire").onclick = () => fenetre.minimize();
 el("fermer").onclick = () => fenetre.close();

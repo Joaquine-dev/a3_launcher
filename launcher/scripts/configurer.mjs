@@ -5,8 +5,9 @@
 //   npm run configurer -- --verifier   n'ecrit rien, sort en erreur si un fichier n'est pas a jour
 //
 // Le code Rust (build.rs) et l'interface (vite.config.ts) lisent launcher.config.json directement.
-import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+// Le script controle aussi "imageFond" (image presente, format, poids).
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ICI = dirname(fileURLToPath(import.meta.url));
@@ -45,6 +46,21 @@ exiger("dossierDonnees", (v) => v.trim().length > 0 && !/[<>:"/\\|?*]/.test(v), 
 exiger("urlServeur", (v) => /^https?:\/\/[^\s/]+(\/[^\s]*)?$/.test(v) && !v.endsWith("/"), "URL complete sans / final, ex. https://play.example.com");
 exiger("userAgent", (v) => /^[A-Za-z0-9._-]+$/.test(v), "lettres, chiffres, . _ - seulement");
 if (c.clePubliqueMaj !== undefined && typeof c.clePubliqueMaj !== "string") erreurs.push(`"clePubliqueMaj" : texte attendu`);
+if (c.imageFond !== undefined && typeof c.imageFond !== "string") erreurs.push(`"imageFond" : texte attendu`);
+const imageFond = typeof c.imageFond === "string" ? c.imageFond.trim() : "";
+if (imageFond) {
+  const PUBLIC = join(LAUNCHER, "public");
+  const dansPublic = resolve(PUBLIC, imageFond);
+  const candidats = [!isAbsolute(imageFond) && dansPublic.startsWith(PUBLIC + sep) ? dansPublic : null, resolve(DEPOT, imageFond)];
+  const fichier = candidats.find((f) => f && existsSync(f) && statSync(f).isFile());
+  if (![".webp", ".jpg", ".jpeg", ".png", ".avif"].includes(extname(imageFond).toLowerCase())) {
+    erreurs.push(`"imageFond" : image .webp, .jpg, .png ou .avif attendue`);
+  } else if (!fichier) {
+    erreurs.push(`"imageFond" : ${imageFond} introuvable dans launcher/public/ et depuis la racine du depot (ou "" pour un degrade sans image)`);
+  } else if (statSync(fichier).size > 400 * 1024) {
+    console.warn(`Attention : imageFond pese ${Math.round(statSync(fichier).size / 1024)} Ko (plus de 400 Ko) ; un .webp de 1650 x 1020 suffit.`);
+  }
+}
 if (typeof c.urlServeur === "string" && c.urlServeur.startsWith("http://")) {
   console.warn("Attention : urlServeur en http://, a reserver aux essais locaux (le launcher doit parler en https ; la mise a jour automatique passe alors en mode non securise).");
 }

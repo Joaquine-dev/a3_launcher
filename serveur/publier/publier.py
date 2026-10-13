@@ -6,7 +6,8 @@
 Dossiers (montes par docker-compose.yml, modifiables par variables d'environnement) :
 
     MODS            /mods             les dossiers @Mod a distribuer (TFAR y livre son .ts3_plugin)
-    CONFIG          /config           launcher.json edite a la main (serveur, liens, news)
+    CONFIG          /config           launcher.json edite a la main (serveur, liens, news) et, facultatif,
+                                      fond.webp (ou .jpg, .png, .avif) : image de la page d'accueil
     LAUNCHER_BUILD  /launcher-build   installeur NSIS *_x64-setup.exe et sa signature .sig (facultatif)
     DONNEES         /donnees          ce que nginx sert
     URL_PUBLIQUE                      https://play.example.com (requis pour publier le launcher)
@@ -43,6 +44,7 @@ TEMPORAIRE = ".publier-tmp"
 INSTALLEUR_STABLE = "launcher-setup.exe"
 SCHEMAS_LIENS = ("https://", "ts3server://", "discord://")
 SETUP = re.compile(r"^(?P<nom>.+)_(?P<version>\d+\.\d+\.\d+)_x64-setup\.exe$")
+EXTENSIONS_FOND = (".webp", ".jpg", ".jpeg", ".png", ".avif")
 INTERDITS_WINDOWS = re.compile(r'[<>"|?*\x00-\x1f]|[. ](/|$)')
 
 PAGE = """<!doctype html>
@@ -53,42 +55,60 @@ PAGE = """<!doctype html>
 <title>%(nom)s - Launcher</title>
 <style>
   :root {
-    --fond: #141618; --surface: #1c1f22; --relief: #262a2e; --trait: rgb(255 255 255 / .08);
-    --texte: #e4e2da; --discret: #969a91; --accent: #8a9a5b; --sur-accent: #101210;
-    --corps: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-    --donnees: "IBM Plex Mono", "Cascadia Mono", Consolas, ui-monospace, monospace;
+    --fond: #0b0d14; --surface: #141824; --relief: #1e2330; --trait: rgb(255 255 255 / .12);
+    --texte: #f4efe6; --discret: rgb(244 239 230 / .72); --pale: rgb(244 239 230 / .52);
+    --accent: #ffb547; --sur-accent: #1d1205;
+    --titre: "Big Shoulders Display", "Bahnschrift", "Arial Narrow", sans-serif;
+    --corps: "Barlow", "Segoe UI", system-ui, sans-serif;
+    --etroit: "Barlow Condensed", "Bahnschrift", "Arial Narrow", sans-serif;
+    --donnees: "Cascadia Mono", Consolas, ui-monospace, monospace;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; background: var(--fond); color: var(--texte); font: 16px/1.6 var(--corps); }
-  .cadre { width: 100%%; max-width: 920px; margin: 0 auto; padding: 0 16px; }
-  .etiquette { font: 500 12px/1.3 var(--donnees); letter-spacing: .14em; text-transform: uppercase; color: var(--discret); margin: 0; }
-  header { border-bottom: 1px solid var(--trait); background: var(--surface); }
-  header .cadre { padding-top: 56px; padding-bottom: 48px; }
-  h1 { margin: 10px 0 8px; font-size: clamp(32px, 7vw, 52px); font-weight: 600; line-height: 1.1; letter-spacing: -.01em; overflow-wrap: anywhere; }
-  .accroche { margin: 0; color: var(--discret); max-width: 560px; }
-  .telecharger { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 32px; }
-  .bouton {
-    display: inline-block; padding: 18px 34px; background: var(--accent); color: var(--sur-accent);
-    font-weight: 600; letter-spacing: .18em; text-transform: uppercase; text-decoration: none;
-    clip-path: polygon(0 0, calc(100%% - 14px) 0, 100%% 14px, 100%% 100%%, 14px 100%%, 0 calc(100%% - 14px));
+  body { margin: 0; min-height: 100vh; background: var(--fond); color: var(--texte); font: 500 16px/1.6 var(--corps); }
+  .cadre { width: 100%%; max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+  .etiquette { font: 700 13px/1.3 var(--etroit); font-stretch: 80%%; letter-spacing: .2em; text-transform: uppercase; color: var(--discret); margin: 0; }
+  header {
+    position: relative; overflow: hidden; min-height: min(78vh, 640px); display: flex; align-items: flex-end;
+    background:
+      linear-gradient(90deg, rgb(11 13 20 / .92) 0%%, rgb(11 13 20 / .6) 45%%, rgb(11 13 20 / .05) 75%%),
+      linear-gradient(0deg, var(--fond) 0%%, rgb(11 13 20 / .55) 30%%, rgb(11 13 20 / 0) 60%%),
+      %(fond)s
+      radial-gradient(60%% 55%% at 70%% 62%%, rgb(255 181 71 / .32), transparent 70%%),
+      linear-gradient(180deg, #161c30 0%%, var(--fond) 100%%);
   }
-  .bouton:hover { filter: brightness(1.1); }
+  header .cadre { padding-top: 64px; padding-bottom: 56px; }
+  header .etiquette { display: inline-flex; align-items: center; gap: 10px; color: var(--accent); }
+  header .etiquette::before { content: ""; width: 8px; height: 8px; border-radius: 50%%; background: var(--accent); box-shadow: 0 0 0 4px rgb(255 181 71 / .18), 0 0 12px var(--accent); }
+  h1 {
+    margin: 14px 0; max-width: 760px; font: 900 clamp(48px, 10vw, 112px)/.88 var(--titre); font-stretch: 75%%;
+    letter-spacing: .005em; text-transform: uppercase; overflow-wrap: anywhere; text-shadow: 0 4px 40px rgb(0 0 0 / .45);
+  }
+  .accroche { margin: 0; color: var(--discret); max-width: 560px; font-size: 18px; }
+  .telecharger { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; margin-top: 34px; }
+  .bouton {
+    display: inline-flex; align-items: center; gap: 14px; padding: 20px 34px; border-radius: 8px;
+    background: linear-gradient(180deg, #ffd690 0%%, var(--accent) 45%%, #f0952f 100%%); color: var(--sur-accent);
+    font: 900 24px/1 var(--titre); font-stretch: 75%%; letter-spacing: .12em; text-transform: uppercase; text-decoration: none;
+    box-shadow: inset 0 0 0 1px #ffe2b0, 0 12px 40px -8px rgb(255 181 71 / .7), 0 0 80px -10px rgb(255 181 71 / .5);
+  }
+  .bouton::before { content: ""; width: 14px; height: 16px; background: currentColor; clip-path: polygon(0 0, 100%% 50%%, 0 100%%); }
+  .bouton:hover { filter: brightness(1.06); }
   .bouton:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-  .version { font: 13px/1.5 var(--donnees); color: var(--discret); }
-  main .cadre { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%%, 400px), 1fr)); gap: 16px; padding-top: 32px; padding-bottom: 56px; }
-  section { background: var(--surface); border: 1px solid var(--trait); border-radius: 4px; padding: 20px 22px; }
+  .version { font-size: 14px; color: var(--pale); }
+  main .cadre { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%%, 440px), 1fr)); gap: 16px; padding-top: 8px; padding-bottom: 56px; }
+  section { background: var(--surface); border: 1px solid var(--trait); border-radius: 8px; padding: 22px 24px; }
   section h2 { margin: 0 0 14px; }
-  ol, ul { margin: 0; padding-left: 20px; }
+  ol, ul { margin: 0; padding-left: 22px; }
   li { margin-bottom: 8px; }
-  li::marker { color: var(--accent); font-family: var(--donnees); }
-  .liens { display: grid; gap: 8px; }
-  .lien { display: block; padding: 10px 14px; text-decoration: none; color: var(--texte); background: var(--relief); border: 1px solid transparent; border-radius: 4px; }
+  li::marker { color: var(--accent); font-weight: 700; }
+  .liens { display: flex; flex-wrap: wrap; gap: 8px; }
+  .lien { display: inline-block; padding: 9px 16px; text-decoration: none; color: var(--texte); font-weight: 600; background: var(--relief); border: 1px solid var(--trait); border-radius: 8px; }
   .lien:hover { border-color: var(--accent); }
-  .vide { color: var(--discret); }
+  .vide { color: var(--pale); }
   code { font: 15px/1.5 var(--donnees); color: var(--accent); overflow-wrap: anywhere; }
   footer { border-top: 1px solid var(--trait); }
-  footer .cadre { color: var(--discret); font: 13px/1.5 var(--donnees); padding-top: 20px; padding-bottom: 28px; }
+  footer .cadre { color: var(--pale); font-size: 14px; padding-top: 20px; padding-bottom: 28px; }
 </style>
 </head>
 <body>
@@ -519,7 +539,30 @@ def publier_launcher(maj):
 
 # ---------- page d'accueil ----------
 
-def page_accueil(config, version, octets, tfar, signe=True):
+def trouver_fond():
+    """Image de fond de la page d'accueil : config/fond.webp (ou .jpg, .jpeg, .png, .avif), sinon None."""
+    for ext in EXTENSIONS_FOND:
+        chemin = os.path.join(CONFIG, "fond" + ext)
+        if os.path.isfile(chemin):
+            return chemin
+    return None
+
+
+def publier_fond(source):
+    """Copie l'image de fond dans donnees/ si elle a change et retire les anciennes ; renvoie le nom servi ou None."""
+    nom = ("fond" + os.path.splitext(source)[1].lower()) if source else None
+    for ext in EXTENSIONS_FOND:
+        ancien = os.path.join(DONNEES, "fond" + ext)
+        if os.path.isfile(ancien) and "fond" + ext != nom:
+            os.remove(ancien)
+    if nom:
+        cible = os.path.join(DONNEES, nom)
+        if not os.path.isfile(cible) or sha256(cible) != sha256(source):
+            copier_atomique(source, cible)
+    return nom
+
+
+def page_accueil(config, version, octets, tfar, signe=True, fond=None):
     e = html.escape
     serveur = config.get("serveur", {})
     nom = e(serveur.get("nom", "Serveur"))
@@ -534,8 +577,10 @@ def page_accueil(config, version, octets, tfar, signe=True):
     libelle = {"stable": " (version stable 0.9)", "beta": " (version 1.0 b&ecirc;ta)"}.get((tfar or {}).get("version"), "")
     ts = ('          <li>TeamSpeak 3 en 64 bits (pas TeamSpeak 5 ni 6) avec le plugin radio TFAR%s : '
           'le launcher propose de l\'installer s\'il manque.</li>\n' % libelle) if tfar else ""
+    image = ('url("/%s") 60%% 40%% / cover no-repeat,' % urllib.parse.quote(fond)) if fond else ""
     return PAGE % {
         "nom": nom,
+        "fond": image,
         "telecharger": telecharger,
         "taille": "environ " + taille_lisible(octets) + " au premier lancement",
         "tfar": ts,
@@ -589,6 +634,7 @@ def main(argv):
     else:
         print("  plugin TFAR : aucun")
     print("  launcher.json : %s" % ("a ecrire" if launcher_change else "inchange"))
+    print("  image de la page d'accueil : %s" % (os.path.basename(trouver_fond() or "") or "aucune (config/fond.webp absent), degrade seul"))
     if maj:
         print("  launcher : version %s %s%s" % (maj["version"], "a publier" if maj["a_publier"] else "deja publiee",
                                               "" if maj["signe"] else " (sans .sig : page de telechargement seulement, pas de mise a jour automatique)"))
@@ -620,7 +666,8 @@ def main(argv):
     latest = lire_json(os.path.join(DONNEES, "update", "latest.json")) or {}
     version = (maj["version"] if maj else latest.get("version")) if os.path.isfile(os.path.join(DONNEES, "update", INSTALLEUR_STABLE)) else None
     signe = maj["signe"] if maj else bool(latest)
-    ecrire_atomique(page_accueil(publiee, version, total, tfar, signe), os.path.join(DONNEES, "index.html"))
+    fond = publier_fond(trouver_fond())
+    ecrire_atomique(page_accueil(publiee, version, total, tfar, signe, fond), os.path.join(DONNEES, "index.html"))
     ecrire_atomique(json.dumps(nouveau_cache), CACHE)
     print("Termine.")
     return 0
