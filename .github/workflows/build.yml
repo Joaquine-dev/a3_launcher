@@ -1,0 +1,67 @@
+# Construit l'installeur Windows signé du launcher.
+# Secrets GitHub (Settings > Secrets and variables > Actions) :
+#   TAURI_SIGNING_PRIVATE_KEY           contenu du fichier .key généré par « npx tauri signer generate »
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  son mot de passe (peut être vide)
+# Sans ces secrets, la construction échoue dès que clePubliqueMaj est renseignée
+# dans launcher.config.json (Tauri exige alors de signer).
+name: Construire le launcher
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: launcher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher/src-tauri
+      - run: npm ci
+      - run: npm run configurer -- --verifier
+      - run: npm run build
+      - run: cargo test --lib
+        working-directory: launcher/src-tauri
+
+  installeur:
+    needs: tests
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: launcher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher/src-tauri
+      - run: npm ci
+      - run: npm run tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installeur-windows
+          path: |
+            launcher/src-tauri/target/release/bundle/nsis/*-setup.exe
+            launcher/src-tauri/target/release/bundle/nsis/*-setup.exe.sig
+          if-no-files-found: error

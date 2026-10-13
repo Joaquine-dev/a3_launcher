@@ -1,0 +1,32 @@
+# Dépendances et produits de construction
+node_modules/
+dist/
+target/
+launcher/src-tauri/gen/
+launcher/src-tauri/icons/android/
+launcher/src-tauri/icons/ios/
+
+# Serveur : données publiées, mods, installeurs, configuration réelle
+serveur/donnees/*
+!serveur/donnees/.gitkeep
+serveur/mods/*
+!serveur/mods/.gitkeep
+serveur/launcher-build/*
+!serveur/launcher-build/.gitkeep
+serveur/config/launcher.json
+serveur/.env
+
+# Secrets
+*.key
+*.key.pub
+.env
+.env.*
+!.env.exemple
+
+# Divers
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

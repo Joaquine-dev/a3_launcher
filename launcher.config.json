@@ -1,0 +1,19 @@
+{
+  "nom": "Arma Launcher",
+  "version": "0.1.0",
+  "identifiant": "com.example.armalauncher",
+  "dossierDonnees": "Arma Launcher",
+  "urlServeur": "https://play.example.com",
+  "clePubliqueMaj": "",
+  "userAgent": "Arma-Launcher",
+  "editeur": "",
+  "devise": "Un serveur, mille histoires…",
+  "couleurs": {
+    "fond": "#0b0f12",
+    "surface": "#12181d",
+    "relief": "#1a2229",
+    "texte": "#eceeea",
+    "accent": "#6cb8e6",
+    "soleil": "#e9b44c"
+  }
+}

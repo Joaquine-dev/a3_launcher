@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>%NOM_LAUNCHER%</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div class="titre" data-tauri-drag-region="deep">
+      <img class="marque" src="/logo.png" alt="" />
+      <span class="titre-nom" id="titre-nom">%NOM_LAUNCHER%</span>
+      <span class="titre-version" id="titre-version"></span>
+      <span class="titre-vide"></span>
+      <button id="ouvrir-parametres" class="fenetre" aria-label="Paramètres" title="Paramètres">
+        <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M1.5 4.5h13M1.5 11.5h13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          <circle cx="5.5" cy="4.5" r="2.1" fill="currentColor" />
+          <circle cx="10.5" cy="11.5" r="2.1" fill="currentColor" />
+        </svg>
+      </button>
+      <button id="reduire" class="fenetre" aria-label="Réduire">
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5h10" stroke="currentColor" stroke-width="1.2" /></svg>
+      </button>
+      <button id="fermer" class="fenetre fermer" aria-label="Fermer">
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1.2" /></svg>
+      </button>
+    </div>
+
+    <section class="entete">
+      <div class="presence">
+        <p class="chapeau"><span id="pastille" class="pastille"></span><span id="etat-serveur">Interrogation du serveur</span></p>
+        <p class="compte"><span id="joueurs" class="squelette"></span><span class="total" id="joueurs-max"></span></p>
+        <p class="sous" id="sous-compte">joueurs connectés</p>
+      </div>
+      <div class="terrain">
+        <p class="carte" id="carte"></p>
+        <p class="devise">%DEVISE%</p>
+      </div>
+    </section>
+
+    <main>
+      <section class="actus">
+        <h2>Actualités</h2>
+        <div id="news" class="news"></div>
+      </section>
+      <aside class="rail">
+        <h2>Rejoindre</h2>
+        <div id="liens" class="liens"></div>
+        <h2 class="second" id="titre-fiche" hidden>Serveur</h2>
+        <dl class="fiche" id="fiche" hidden>
+          <div><dt>Adresse</dt><dd id="adresse" class="adresse"></dd></div>
+          <div id="ligne-reboot" hidden><dt>Redémarrage</dt><dd id="reboot"></dd></div>
+        </dl>
+      </aside>
+    </main>
+
+    <footer class="action">
+      <div id="jauge" class="jauge" aria-hidden="true" hidden></div>
+      <div class="action-texte">
+        <p id="etat-mods">Connexion au serveur de mise à jour…</p>
+        <p id="detail" class="detail"></p>
+      </div>
+      <p id="pourcent" class="pourcent" hidden></p>
+      <button id="forcer" class="tertiaire" hidden>Lancer quand même</button>
+      <button id="principal" class="principal attente" disabled>Chargement…</button>
+    </footer>
+
+    <div class="avis">
+      <div id="hors-ligne" class="chip" hidden>
+        <span>Hors ligne : le serveur de mise à jour est injoignable.</span>
+      </div>
+      <div id="bandeau-teamspeak" class="chip" hidden>
+        <span>TeamSpeak 3 n'est pas installé : la voix et la radio passent par lui (TeamSpeak 5 et 6 ne gèrent pas le plugin radio).</span>
+        <button id="installer-teamspeak" class="secondaire">Télécharger</button>
+      </div>
+      <div id="bandeau-tfar" class="chip" hidden>
+        <span id="texte-tfar">Le plugin TeamSpeak TFAR manque : pas de voix ni de radio en jeu.</span>
+        <button id="installer-tfar" class="secondaire">Installer</button>
+      </div>
+      <div id="erreur" class="chip erreur" hidden></div>
+    </div>
+
+    <dialog id="parametres" class="panneau">
+      <header class="panneau-tete">
+        <h2 class="titre-dialogue">Paramètres</h2>
+        <button id="fermer-parametres" class="fenetre" aria-label="Fermer les paramètres">
+          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1.2" /></svg>
+        </button>
+      </header>
+
+      <div class="panneau-corps">
+        <section class="groupe">
+          <h3>Dossiers</h3>
+          <label>Arma 3
+            <span class="champ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><input id="p-arma" type="text" spellcheck="false" placeholder="C:\Program Files (x86)\Steam\steamapps\common\Arma 3" /><button id="choisir-arma" class="secondaire">Modifier</button></span>
+            <em>Le dossier qui contient Arma3_x64.exe.</em>
+          </label>
+          <label>Mods du serveur
+            <span class="champ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><input id="p-mods" type="text" spellcheck="false" /><button id="choisir-mods" class="secondaire">Modifier</button></span>
+            <em>Les mods sont téléchargés ici.</em>
+          </label>
+        </section>
+
+        <section class="groupe">
+          <h3>Lancement</h3>
+          <label>Après le lancement du jeu
+            <select id="p-apres">
+              <option value="reduire">Réduire dans la zone de notification</option>
+              <option value="fermer">Fermer le launcher</option>
+            </select>
+          </label>
+          <label class="case" id="ligne-teamspeak"><span class="case-texte">Rejoindre le TeamSpeak au lancement<em>Sans effet si TeamSpeak est déjà ouvert.</em></span><input id="p-teamspeak" type="checkbox" role="switch" /></label>
+          <label>Paramètres Arma supplémentaires
+            <input id="p-params" type="text" spellcheck="false" placeholder="-world=empty -noLogs" />
+            <em>Pour les joueurs avertis. Laissez vide dans le doute.</em>
+          </label>
+        </section>
+      </div>
+
+      <footer class="panneau-pied">
+        <p id="p-erreur" class="erreur-dialogue" hidden></p>
+        <p id="p-etat" class="etat-dialogue" hidden></p>
+        <div class="actions">
+          <button id="integrite" class="tertiaire" title="Recalcule chaque fichier des mods : plus long qu'une vérification normale. Utile si le jeu plante au chargement.">Revérifier les fichiers</button>
+          <span class="espace"></span>
+          <button id="annuler" class="secondaire">Annuler</button>
+          <button id="enregistrer" class="valider">Enregistrer</button>
+        </div>
+      </footer>
+    </dialog>
+
+    <dialog id="maj">
+      <h2 class="titre-dialogue">Mise à jour du launcher</h2>
+      <p class="texte-dialogue">La version <strong id="maj-version"></strong> est disponible.</p>
+      <p id="maj-etat" class="texte-dialogue detail"></p>
+      <div class="actions">
+        <span class="espace"></span>
+        <button id="maj-plus-tard" class="secondaire">Plus tard</button>
+        <button id="maj-installer" class="valider">Installer et redémarrer</button>
+      </div>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

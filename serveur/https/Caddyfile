@@ -1,0 +1,11 @@
+# Profil "https" : Caddy obtient et renouvelle le certificat Let's Encrypt de DOMAINE
+# puis relaie vers nginx. DOMAINE et EMAIL_ACME viennent du fichier .env.
+{
+	email {$EMAIL_ACME}
+}
+
+{$DOMAINE} {
+	encode zstd gzip
+	header -Server
+	reverse_proxy nginx:80
+}

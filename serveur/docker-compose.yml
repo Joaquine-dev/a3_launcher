@@ -1,0 +1,60 @@
+# Serveur de mises a jour du launcher.
+#
+#   docker compose up -d                       nginx sur le port HTTP_ECOUTE (80 par defaut)
+#   docker compose run --rm publier --a-sec    simulation d'une publication
+#   docker compose run --rm publier            publication (mods, launcher.json, launcher, page)
+#   docker compose --profile https up -d       ajoute Caddy devant nginx (HTTPS automatique)
+#
+# Reglages dans .env (copier .env.exemple).
+name: arma-launcher
+
+services:
+  nginx:
+    image: nginx:1.28.0-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_ECOUTE:-80}:80"
+    volumes:
+      - ./donnees:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/securite.conf:/etc/nginx/snippets/securite.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/sante"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  publier:
+    build: ./publier
+    image: arma-launcher-publier:local
+    profiles: ["outils"]
+    environment:
+      URL_PUBLIQUE: ${URL_PUBLIQUE:-}
+    volumes:
+      - ./mods:/mods:ro
+      - ./config:/config:ro
+      - ./launcher-build:/launcher-build:ro
+      - ./donnees:/donnees
+
+  caddy:
+    image: caddy:2.10.0-alpine
+    restart: unless-stopped
+    profiles: ["https"]
+    depends_on:
+      - nginx
+    environment:
+      DOMAINE: ${DOMAINE:-}
+      EMAIL_ACME: ${EMAIL_ACME:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./https/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_donnees:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_donnees:
+  caddy_config:

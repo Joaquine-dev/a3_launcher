@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "serveur": { "nom": "Mon Serveur Arma 3", "hote": "play.example.com", "port": 2302, "motDePasse": "" },
+  "parametres": "-skipIntro -noSplash",
+  "liens": [
+    { "nom": "TeamSpeak", "url": "ts3server://play.example.com?port=9987", "icone": "teamspeak" },
+    { "nom": "Discord", "url": "https://discord.gg/exemple", "icone": "discord" },
+    { "nom": "Site", "url": "https://www.example.com", "icone": "site", "description": "Règlement et actualités" }
+  ],
+  "news": [
+    { "date": "2026-01-15", "titre": "Bienvenue", "texte": "Le launcher télécharge les mods et vous connecte au serveur en un clic.", "lien": { "nom": "Lire le règlement", "url": "https://www.example.com/reglement" } }
+  ]
+}
