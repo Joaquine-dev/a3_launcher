@@ -12,9 +12,10 @@ Dossiers (montes par docker-compose.yml, modifiables par variables d'environneme
     URL_PUBLIQUE                      https://play.example.com (requis pour publier le launcher)
 
 Ordre de publication (le meme que l'outil d'origine) : fichiers de mods copies, puis
-launcher.json, puis manifest.json remplace d'un coup, puis fichiers disparus supprimes.
-Le manifeste en ligne ne cite donc jamais un fichier absent, ni un mod hors de la
-liste en ligne (le launcher refuse le manifeste entier sur un seul chemin hors liste).
+launcher.json, puis manifest.json remplace d'un coup, puis fichiers disparus supprimes
+(tout fichier de donnees/mods absent du manifeste, ce qui rattrape une publication
+interrompue). Le manifeste en ligne ne cite donc jamais un fichier absent ; le launcher
+relit launcher.json avant chaque manifest.json.
 
     --a-sec          affiche ce qui serait fait, n'ecrit rien
     --notes "texte"  notes de version de la mise a jour du launcher (update/latest.json)
@@ -42,6 +43,7 @@ TEMPORAIRE = ".publier-tmp"
 INSTALLEUR_STABLE = "launcher-setup.exe"
 SCHEMAS_LIENS = ("https://", "ts3server://", "discord://")
 SETUP = re.compile(r"^(?P<nom>.+)_(?P<version>\d+\.\d+\.\d+)_x64-setup\.exe$")
+INTERDITS_WINDOWS = re.compile(r'[<>"|?*\x00-\x1f]|[. ](/|$)')
 
 PAGE = """<!doctype html>
 <html lang="fr">
@@ -205,11 +207,14 @@ def lire_config():
 def lister_mods(preference):
     if not os.path.isdir(MODS):
         sortir("dossier des mods absent : %s" % MODS)
+    for n in sorted(os.listdir(MODS)):
+        if n.startswith("@") and os.path.islink(os.path.join(MODS, n)) and not os.path.isdir(os.path.join(MODS, n)):
+            print("  [!] lien symbolique sans cible dans le conteneur, ignore : %s (copiez le dossier lui-meme)" % n)
     presents = sorted(n for n in os.listdir(MODS) if n.startswith("@") and os.path.isdir(os.path.join(MODS, n)))
     if not presents:
         sortir("aucun dossier @Mod dans %s" % MODS)
     for n in presents:
-        if "/" in n or n in ("@.", "@.."):
+        if not relatif_sur(n) or "/" in n or INTERDITS_WINDOWS.search(n):
             sortir("nom de mod refuse : %s" % n)
     ordre = [m for m in (preference or []) if m in presents]
     for m in preference or []:
@@ -223,6 +228,10 @@ def plugin_tfar():
     if len(plugins) > 1:
         print("  [!] plusieurs .ts3_plugin dans %s, seul %s est publie" % (MODS, plugins[0]))
     return os.path.join(MODS, plugins[0]) if plugins else None
+
+
+def nom_tfar(plugin):
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", os.path.basename(plugin)).lstrip(".-") or "task_force_radio.ts3_plugin"
 
 
 def empreinte_dll_tfar(plugin):
@@ -243,7 +252,7 @@ def config_publiee(config, mods, tfar):
             publiee["mods"] = mods
     publiee.setdefault("mods", mods)
     if tfar:
-        publiee["tfarPlugin"] = "tfar/" + os.path.basename(tfar)
+        publiee["tfarPlugin"] = "tfar/" + nom_tfar(tfar)
         dll = empreinte_dll_tfar(tfar)
         if dll:
             publiee["tfarDll"] = dll
@@ -256,17 +265,37 @@ def charger_cache():
     return lire_json(CACHE) or {}
 
 
+def ignore(nom):
+    return nom.startswith(".") or nom.endswith(".part") or nom.endswith(TEMPORAIRE)
+
+
 def calculer_manifeste(mods, genere, cache):
     fichiers = []
     nouveau_cache = {}
+    vus = {}
     for mod in mods:
         for dossier, sous, noms in os.walk(os.path.join(MODS, mod)):
+            for nom in list(sous):
+                plein = os.path.join(dossier, nom)
+                if os.path.islink(plein):
+                    sortir("lien symbolique refuse : %s (copiez les fichiers eux-memes)" % os.path.relpath(plein, MODS))
+                if ignore(nom):
+                    print("  [!] dossier ignore (cache, non servi par nginx) : %s" % os.path.relpath(plein, MODS))
+                    sous.remove(nom)
             sous.sort()
             for nom in sorted(noms):
                 plein = os.path.join(dossier, nom)
                 rel = os.path.relpath(plein, MODS).replace(os.sep, "/")
-                if not chemin_valide(rel, mods):
+                if os.path.islink(plein):
+                    sortir("lien symbolique refuse : %s (copiez le fichier lui-meme)" % rel)
+                if ignore(nom):
+                    print("  [!] fichier ignore (cache, .part ou temporaire) : %s" % rel)
+                    continue
+                if not chemin_valide(rel, mods) or INTERDITS_WINDOWS.search(rel):
                     sortir("chemin refuse : %s" % rel)
+                if rel.lower() in vus:
+                    sortir("deux fichiers ne different que par la casse (conflit sous Windows) : %s et %s" % (vus[rel.lower()], rel))
+                vus[rel.lower()] = rel
                 st = os.stat(plein)
                 cle = "%d:%d" % (st.st_size, st.st_mtime_ns)
                 connu = cache.get(rel)
@@ -285,7 +314,13 @@ def delta(nouveau, ancien):
         cible = os.path.join(DONNEES, "mods", *f["chemin"].split("/"))
         if anciens.get(f["chemin"]) != f or not os.path.isfile(cible) or os.path.getsize(cible) != f["taille"]:
             envoyer.append(f)
-    supprimer = sorted(c for c in anciens if c not in nouveaux)
+    racine = os.path.join(DONNEES, "mods")
+    en_ligne = set(anciens)
+    for dossier, _, noms in os.walk(racine):
+        for nom in noms:
+            if not nom.endswith(TEMPORAIRE):
+                en_ligne.add(os.path.relpath(os.path.join(dossier, nom), racine).replace(os.sep, "/"))
+    supprimer = sorted(c for c in en_ligne if c not in nouveaux)
     return envoyer, supprimer
 
 
@@ -428,7 +463,7 @@ def main(argv):
     ancien = lire_json(os.path.join(DONNEES, "manifest.json"))
     envoyer, supprimer = delta(manifeste, ancien)
 
-    tfar_cible = os.path.join(DONNEES, "tfar", os.path.basename(tfar)) if tfar else None
+    tfar_cible = os.path.join(DONNEES, "tfar", nom_tfar(tfar)) if tfar else None
     tfar_change = bool(tfar) and (not os.path.isfile(tfar_cible) or sha256(tfar_cible) != sha256(tfar))
 
     ancien_launcher = lire_json(os.path.join(DONNEES, "launcher.json"))
@@ -471,7 +506,7 @@ def main(argv):
     tfar_dossier = os.path.join(DONNEES, "tfar")
     if os.path.isdir(tfar_dossier):
         for nom in os.listdir(tfar_dossier):
-            if not tfar or nom != os.path.basename(tfar):
+            if not tfar or nom != nom_tfar(tfar):
                 os.remove(os.path.join(tfar_dossier, nom))
     if maj and maj["a_publier"]:
         publier_launcher(maj)

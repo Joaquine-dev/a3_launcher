@@ -438,6 +438,7 @@ async function enregistrer() {
 }
 
 async function miseAJourLauncher() {
+  if (!__MAJ_AUTO__) return;
   try {
     const maj = await check();
     if (!maj) return;

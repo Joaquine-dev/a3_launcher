@@ -36,7 +36,7 @@ Côté serveur, **aucun code ne tourne** : nginx sert des fichiers statiques, et
 1. **Le serveur.** Sur un VPS avec Docker et un nom de domaine qui pointe dessus :
    ```sh
    git clone <ce dépôt> && cd <dépôt>/serveur
-   cp .env.exemple .env                                  # URL_PUBLIQUE, DOMAINE, EMAIL_ACME
+   cp .env.exemple .env                                  # URL_PUBLIQUE, DOMAINE, EMAIL_ACME (garder HTTP_ECOUTE=127.0.0.1:8080)
    cp config/launcher.exemple.json config/launcher.json  # nom, adresse, port, liens, news
    docker compose --profile https up -d                  # nginx + HTTPS automatique (Caddy)
    ```

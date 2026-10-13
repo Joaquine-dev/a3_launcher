@@ -11,7 +11,7 @@ L'outil `publier` compare ce que vous avez déposé (`mods/`, `config/launcher.j
 
 ## Mods : ajouter, mettre à jour, retirer
 
-1. Déposez les dossiers `@Mod` dans `serveur/mods/` (WinSCP, `scp -r`, `rsync -av --delete`…). Les dossiers dont le nom ne commence pas par `@` sont ignorés.
+1. Déposez les dossiers `@Mod` dans `serveur/mods/` (WinSCP, `scp -r`, `rsync -av --delete`…). Les dossiers dont le nom ne commence pas par `@` sont ignorés, ainsi que, dans les mods, les fichiers et dossiers cachés (nom commençant par `.`, que nginx ne sert pas) et les fichiers `.part`. Copiez les fichiers eux-mêmes : `publier` refuse les liens symboliques (le conteneur ne voit pas leur cible).
 2. Pour retirer un mod, supprimez son dossier de `serveur/mods/`.
 3. `docker compose run --rm publier --a-sec`, vérifiez la liste, puis sans `--a-sec`.
 
@@ -38,7 +38,7 @@ Si votre serveur utilise Task Force Radio, déposez le fichier `task_force_radio
 3. `manifest.json`, remplacé d'un coup ;
 4. la suppression des fichiers disparus.
 
-Le manifeste en ligne ne cite donc jamais un fichier absent, ni un mod hors de la liste de `launcher.json` (le launcher refuserait le manifeste entier). Un joueur qui télécharge pendant la publication peut au pire recevoir une empreinte différente de celle attendue : le launcher réessaie puis affiche une erreur, et un nouveau clic sur *Mettre à jour* suffit.
+Le manifeste en ligne ne cite donc jamais un fichier absent. Le launcher relit `launcher.json` juste avant chaque `manifest.json` : un joueur dont le launcher est resté ouvert pendant l'ajout d'un mod reçoit la nouvelle liste, sans redémarrer. Un joueur qui télécharge pendant la publication peut au pire recevoir une empreinte différente de celle attendue : le launcher réessaie puis affiche une erreur, et un nouveau clic sur *Mettre à jour* suffit.
 
 ## News, liens, adresse du serveur de jeu
 

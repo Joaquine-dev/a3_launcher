@@ -1,6 +1,6 @@
 # Serveur de mises a jour du launcher.
 #
-#   docker compose up -d                       nginx sur le port HTTP_ECOUTE (80 par defaut)
+#   docker compose up -d                       nginx sur HTTP_ECOUTE (127.0.0.1:8080 par defaut)
 #   docker compose run --rm publier --a-sec    simulation d'une publication
 #   docker compose run --rm publier            publication (mods, launcher.json, launcher, page)
 #   docker compose --profile https up -d       ajoute Caddy devant nginx (HTTPS automatique)
@@ -13,7 +13,7 @@ services:
     image: nginx:1.28.0-alpine
     restart: unless-stopped
     ports:
-      - "${HTTP_ECOUTE:-80}:80"
+      - "${HTTP_ECOUTE:-127.0.0.1:8080}:80"
     volumes:
       - ./donnees:/usr/share/nginx/html:ro
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -28,6 +28,9 @@ services:
   publier:
     build: ./publier
     image: arma-launcher-publier:local
+    # Reconstruit l'image a chaque "run" (quelques secondes, en cache) : apres un git pull,
+    # la nouvelle version de publier.py sert tout de suite.
+    pull_policy: build
     profiles: ["outils"]
     environment:
       URL_PUBLIQUE: ${URL_PUBLIQUE:-}

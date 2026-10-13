@@ -45,7 +45,7 @@ cp config/launcher.exemple.json config/launcher.json
 | Variable | Rôle |
 |---|---|
 | `URL_PUBLIQUE` | Adresse publique, sans `/` final : `https://play.example.com`. Doit être identique à `urlServeur` de `launcher.config.json`. Sert à écrire l'URL de l'installeur dans `update/latest.json`. |
-| `HTTP_ECOUTE` | Où nginx écoute sur l'hôte : `80` (nginx exposé directement) ou `127.0.0.1:8080` (derrière un reverse proxy ou avec le profil `https`). |
+| `HTTP_ECOUTE` | Où nginx écoute sur l'hôte : `127.0.0.1:8080` (valeur par défaut : profil `https` ou reverse proxy) ou `80` (nginx exposé directement, voie C). |
 | `DOMAINE`, `EMAIL_ACME` | Utilisés seulement par le profil `https` (Caddy). |
 
 Éditez `config/launcher.json` (nom du serveur, adresse et port de jeu, liens, news) : voir [05-format-des-fichiers.md](05-format-des-fichiers.md). Ce fichier n'est pas suivi par git.

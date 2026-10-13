@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 
-type ConfigLauncher = { nom: string; devise?: string; couleurs?: Record<string, string> };
+type ConfigLauncher = { nom: string; devise?: string; clePubliqueMaj?: string; couleurs?: Record<string, string> };
 
 const CHEMIN = fileURLToPath(new URL("../launcher.config.json", import.meta.url));
 const config: ConfigLauncher = JSON.parse(readFileSync(CHEMIN, "utf8"));
@@ -33,6 +33,9 @@ export default defineConfig({
   clearScreen: false,
   server: { port: 1420, strictPort: true, watch: { ignored: ["**/src-tauri/**"] } },
   build: { target: "es2021", assetsInlineLimit: 0 },
-  define: { __NOM_LAUNCHER__: JSON.stringify(config.nom) },
+  define: {
+    __NOM_LAUNCHER__: JSON.stringify(config.nom),
+    __MAJ_AUTO__: JSON.stringify((config.clePubliqueMaj ?? "").trim().length > 0),
+  },
   plugins: [configurerPage()],
 });

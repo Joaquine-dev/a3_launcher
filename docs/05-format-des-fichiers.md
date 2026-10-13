@@ -105,6 +105,8 @@ Un `chemin` est accepté par le launcher **et** par `publier` seulement s'il :
 - a au moins deux segments séparés par `/`, aucun vide, aucun égal à `.` ou `..` ;
 - commence par un mod de la liste `mods`.
 
+`publier` refuse en plus les liens symboliques, les noms invalides sous Windows (`< > " | ? *`, caractères de contrôle, segment finissant par un point ou une espace) et deux chemins qui ne diffèrent que par la casse ; il ignore les fichiers et dossiers cachés et les fichiers `.part`.
+
 Un seul chemin refusé fait rejeter **tout** le manifeste (« Manifeste refusé, chemin invalide »). Un SHA-256 qui n'a pas 64 caractères hexadécimaux aussi.
 
 ## `update/latest.json`

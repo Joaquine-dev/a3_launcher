@@ -145,6 +145,15 @@ async fn charger(partage: State<'_, Partage>) -> Result<Accueil, String> {
 
 async fn verifier_interne(partage: &Partage, complet: bool) -> Result<Resume, String> {
     let mut e = partage.0.lock().await;
+    if !e.hors_ligne {
+        if let Ok(t) = distant::telecharger_texte(&e.client, "launcher.json").await {
+            if let Ok(l) = distant::analyser_launcher(&t) {
+                let _ = std::fs::create_dir_all(config::dossier_appli());
+                let _ = std::fs::write(config::dossier_appli().join("launcher.json"), &t);
+                e.launcher = Some(l);
+            }
+        }
+    }
     let launcher = e.launcher.clone().ok_or("launcher.json indisponible")?;
     let racine = e.reglages.dossier_mods.clone();
     sync::nettoyer_parts(&racine, &launcher.mods);
