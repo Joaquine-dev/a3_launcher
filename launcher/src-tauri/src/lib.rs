@@ -9,6 +9,8 @@ mod hash;
 mod manifest;
 mod sync;
 mod tfar;
+#[cfg(test)]
+mod essai;
 
 use serde::Serialize;
 use std::path::PathBuf;

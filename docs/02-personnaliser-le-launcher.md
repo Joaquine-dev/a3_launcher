@@ -103,4 +103,6 @@ npm install
 npm run tauri dev
 ```
 
-La fenêtre s'ouvre en mode développement et interroge `urlServeur`. Pour essayer avec un serveur local, mettez temporairement `"urlServeur": "http://127.0.0.1:8080"` (le script `configurer` prévient que `http://` est réservé aux essais).
+La fenêtre s'ouvre en mode développement et interroge `urlServeur`. Pour essayer avec un serveur local, mettez temporairement `"urlServeur": "http://127.0.0.1:8080"` (le script `configurer` prévient que `http://` est réservé aux essais). Le launcher accepte alors le `http` pour toutes ses requêtes ; `configurer` active aussi `dangerousInsecureTransportProtocol` du plugin de mise à jour, sans quoi le launcher refuse de démarrer avec une URL en `http://`. Ce drapeau disparaît dès que `urlServeur` repasse en `https://`. Ne distribuez jamais un launcher construit en `http://`.
+
+![Le launcher construit, branché sur un serveur Docker local : plugin TFAR stable détecté, 4 fichiers à télécharger](captures/fenetre-reelle.png)

@@ -46,7 +46,7 @@ exiger("urlServeur", (v) => /^https?:\/\/[^\s/]+(\/[^\s]*)?$/.test(v) && !v.ends
 exiger("userAgent", (v) => /^[A-Za-z0-9._-]+$/.test(v), "lettres, chiffres, . _ - seulement");
 if (c.clePubliqueMaj !== undefined && typeof c.clePubliqueMaj !== "string") erreurs.push(`"clePubliqueMaj" : texte attendu`);
 if (typeof c.urlServeur === "string" && c.urlServeur.startsWith("http://")) {
-  console.warn("Attention : urlServeur en http://, a reserver aux essais locaux (le launcher doit parler en https).");
+  console.warn("Attention : urlServeur en http://, a reserver aux essais locaux (le launcher doit parler en https ; la mise a jour automatique passe alors en mode non securise).");
 }
 if (erreurs.length) {
   console.error("launcher.config.json invalide :\n  " + erreurs.join("\n  "));
@@ -78,6 +78,9 @@ function finDeLigne(texte) {
   else delete t.bundle.publisher;
   t.plugins.updater.pubkey = cle;
   t.plugins.updater.endpoints = [`${c.urlServeur}/update/latest.json`];
+  // Sans ce drapeau, une URL en http:// fait planter le launcher au demarrage (plugin updater). Essais locaux seulement.
+  if (c.urlServeur.startsWith("http://")) t.plugins.updater.dangerousInsecureTransportProtocol = true;
+  else delete t.plugins.updater.dangerousInsecureTransportProtocol;
   const fl = finDeLigne(texte);
   poser(TAURI, texte, JSON.stringify(t, null, 2).replace(/\n/g, fl) + fl);
 }
